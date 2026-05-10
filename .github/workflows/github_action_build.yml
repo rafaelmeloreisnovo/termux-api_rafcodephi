@@ -40,6 +40,7 @@ jobs:
           APK_DIR_PATH="./app/build/outputs/apk/debug"
           APK_VERSION_TAG="$RELEASE_VERSION_NAME.github.debug" # Note the ".", GITHUB_SHA will already have "+" before it
           APK_BASENAME_PREFIX="termux-api-app_$APK_VERSION_TAG"
+          EXPECTED_ABIS=("armeabi-v7a" "arm64-v8a")
 
           # Used by upload step later
           echo "APK_DIR_PATH=$APK_DIR_PATH" >> $GITHUB_ENV
@@ -53,14 +54,18 @@ jobs:
             exit_on_error "Build failed for '$RELEASE_VERSION_NAME' release with '$APK_VERSION_TAG' tag."
           fi
 
-          echo "Validating APK file"
-          if ! test -f "$APK_DIR_PATH/${APK_BASENAME_PREFIX}.apk"; then
-            files_found="$(ls "$APK_DIR_PATH")"
-            exit_on_error "Failed to find built APK file at '$APK_DIR_PATH/${APK_BASENAME_PREFIX}.apk'. Files found: "$'\n'"$files_found"
-          fi
+          echo "Validating ABI APK files"
+          for abi in "${EXPECTED_ABIS[@]}"; do
+            apk_path="$APK_DIR_PATH/${APK_BASENAME_PREFIX}-${abi}.apk"
+            if ! test -f "$apk_path"; then
+              files_found="$(ls "$APK_DIR_PATH")"
+              exit_on_error "Failed to find built ABI APK file at '$apk_path'. Files found: "$'
+'"$files_found"
+            fi
+          done
 
           echo "Generating checksums-sha256.txt file"
-          if ! (cd "$APK_DIR_PATH"; sha256sum "${APK_BASENAME_PREFIX}.apk" > checksums-sha256.txt); then
+          if ! (cd "$APK_DIR_PATH"; sha256sum "${APK_BASENAME_PREFIX}-"*.apk > checksums-sha256.txt); then
             exit_on_error "Generate checksums-sha256.txt file failed for '$RELEASE_VERSION_NAME' release."
           fi
           echo "checksums-sha256.txt:"$'\n```\n'"$(cat "$APK_DIR_PATH/checksums-sha256.txt")"$'\n```'
@@ -70,6 +75,7 @@ jobs:
         with:
           name: ${{ env.APK_BASENAME_PREFIX }}
           path: |
-            ${{ env.APK_DIR_PATH }}/${{ env.APK_BASENAME_PREFIX }}.apk
+            ${{ env.APK_DIR_PATH }}/${{ env.APK_BASENAME_PREFIX }}-armeabi-v7a.apk
+            ${{ env.APK_DIR_PATH }}/${{ env.APK_BASENAME_PREFIX }}-arm64-v8a.apk
             ${{ env.APK_DIR_PATH }}/checksums-sha256.txt
             ${{ env.APK_DIR_PATH }}/output-metadata.json

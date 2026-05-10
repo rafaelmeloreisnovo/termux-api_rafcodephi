@@ -36,6 +36,7 @@ jobs:
           APK_DIR_PATH="./app/build/outputs/apk/release"
           APK_VERSION_TAG="${RELEASE_VERSION_NAME#v}"
           APK_BASENAME_PREFIX="termux-api-app_$APK_VERSION_TAG"
+          EXPECTED_ABIS=("armeabi-v7a" "arm64-v8a")
 
           echo "Building APK file for '$RELEASE_VERSION_NAME' release with '$APK_VERSION_TAG' tag"
           export TERMUX_API_APP__BUILD__APK_VERSION_TAG="$APK_VERSION_TAG" # Used by app/build.gradle
@@ -43,26 +44,25 @@ jobs:
             exit_on_error "Build failed for '$RELEASE_VERSION_NAME' release with '$APK_VERSION_TAG' tag."
           fi
 
-          echo "Validating APK file"
-          if ! test -f "$APK_DIR_PATH/${APK_BASENAME_PREFIX}.apk"; then
-            files_found="$(ls "$APK_DIR_PATH")"
-            exit_on_error "Failed to find built APK file at '$APK_DIR_PATH/${APK_BASENAME_PREFIX}.apk'. Files found: "$'\n'"$files_found"
-          fi
-          release_apk_count="$(find "$APK_DIR_PATH" -maxdepth 1 -type f -name '*-release.apk' | wc -l)"
-          if [ "$release_apk_count" -eq 0 ]; then
-            files_found="$(ls "$APK_DIR_PATH")"
-            exit_on_error "No '*-release.apk' file found in '$APK_DIR_PATH'. Files found: "$'\n'"$files_found"
-          fi
-
+          echo "Validating ABI APK files"
+          for abi in "${EXPECTED_ABIS[@]}"; do
+            apk_path="$APK_DIR_PATH/${APK_BASENAME_PREFIX}-${abi}.apk"
+            if ! test -f "$apk_path"; then
+              files_found="$(ls "$APK_DIR_PATH")"
+              exit_on_error "Failed to find built ABI APK file at '$apk_path'. Files found: "$'
+'"$files_found"
+            fi
+          done
           echo "Generating checksums-sha256.txt file"
-          if ! (cd "$APK_DIR_PATH"; sha256sum "${APK_BASENAME_PREFIX}.apk" > checksums-sha256.txt); then
+          if ! (cd "$APK_DIR_PATH"; sha256sum "${APK_BASENAME_PREFIX}-"*.apk > checksums-sha256.txt); then
             exit_on_error "Generate checksums-sha256.txt file failed for '$RELEASE_VERSION_NAME' release."
           fi
           echo "checksums-sha256.txt:"$'\n```\n'"$(cat "$APK_DIR_PATH/checksums-sha256.txt")"$'\n```'
 
           echo "Uploading files to release"
           if ! gh release upload "$RELEASE_VERSION_NAME" \
-            "$APK_DIR_PATH/${APK_BASENAME_PREFIX}.apk" \
+            "$APK_DIR_PATH/${APK_BASENAME_PREFIX}-armeabi-v7a.apk" \
+            "$APK_DIR_PATH/${APK_BASENAME_PREFIX}-arm64-v8a.apk" \
             "$APK_DIR_PATH/checksums-sha256.txt" \
           ; then
             exit_on_error "Upload files to release failed for '$RELEASE_VERSION_NAME' release."
