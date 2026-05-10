@@ -1,0 +1,100 @@
+name: Beta APK (Android 10 arm32/arm64)
+
+on:
+  workflow_dispatch:
+    inputs:
+      app_version_name:
+        description: "SemVer versionName override (ex: 0.53.0-beta.1)"
+        required: false
+        default: "0.53.0-beta.1"
+
+jobs:
+  build-beta:
+    runs-on: ubuntu-latest
+    env:
+      JAVA_VERSION: "17"
+      ABI32: armeabi-v7a
+      ABI64: arm64-v8a
+      APK_DEBUG_DIR: app/build/outputs/apk/debug
+      APK_RELEASE_DIR: app/build/outputs/apk/release
+      TERMUX_API_APP__BUILD__APP_VERSION_NAME: ${{ github.event.inputs.app_version_name }}
+      TERMUX_API_APP__BUILD__APK_VERSION_TAG: beta-${{ github.run_number }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: gradle
+
+      - name: Build debug and release APK splits
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./gradlew --no-daemon clean assembleDebug assembleRelease
+
+      - name: Validate ABI split outputs
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          ARM32_DEBUG_APK="$(find "$APK_DEBUG_DIR" -maxdepth 1 -type f -name "*-${ABI32}.apk" | head -n1)"
+          ARM64_DEBUG_APK="$(find "$APK_DEBUG_DIR" -maxdepth 1 -type f -name "*-${ABI64}.apk" | head -n1)"
+          ARM32_RELEASE_APK="$(find "$APK_RELEASE_DIR" -maxdepth 1 -type f -name "*-${ABI32}.apk" | head -n1)"
+          ARM64_RELEASE_APK="$(find "$APK_RELEASE_DIR" -maxdepth 1 -type f -name "*-${ABI64}.apk" | head -n1)"
+
+          test -n "$ARM32_DEBUG_APK"
+          test -n "$ARM64_DEBUG_APK"
+          test -n "$ARM32_RELEASE_APK"
+          test -n "$ARM64_RELEASE_APK"
+
+          echo "arm32 debug:   $ARM32_DEBUG_APK"
+          echo "arm64 debug:   $ARM64_DEBUG_APK"
+          echo "arm32 release: $ARM32_RELEASE_APK"
+          echo "arm64 release: $ARM64_RELEASE_APK"
+
+      - name: Generate internal beta signing key
+        shell: bash
+        run: |
+          set -euo pipefail
+          keytool -genkeypair -v \
+            -keystore beta-validation.jks \
+            -storepass changeit \
+            -keypass changeit \
+            -alias beta-validation \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 3650 \
+            -dname "CN=Beta Validation, OU=CI, O=Termux, L=NA, ST=NA, C=US"
+
+      - name: Sign release splits for beta validation
+        shell: bash
+        run: |
+          set -euo pipefail
+          APKSIGNER="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -n1)/apksigner"
+          for abi in "$ABI32" "$ABI64"; do
+            UNSIGNED_APK="$(find "$APK_RELEASE_DIR" -maxdepth 1 -type f -name "*-${abi}.apk" | head -n1)"
+            SIGNED_APK="${UNSIGNED_APK%.apk}-beta-signed.apk"
+            "$APKSIGNER" sign \
+              --ks beta-validation.jks \
+              --ks-pass pass:changeit \
+              --key-pass pass:changeit \
+              --ks-key-alias beta-validation \
+              --out "$SIGNED_APK" \
+              "$UNSIGNED_APK"
+            "$APKSIGNER" verify --verbose "$SIGNED_APK"
+          done
+
+      - name: Upload beta artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: beta-android10-arm32-arm64-apks
+          path: |
+            app/build/outputs/apk/debug/*.apk
+            app/build/outputs/apk/release/*-${{ env.ABI32 }}.apk
+            app/build/outputs/apk/release/*-${{ env.ABI64 }}.apk
+            app/build/outputs/apk/release/*-beta-signed.apk
+            beta-validation.jks
