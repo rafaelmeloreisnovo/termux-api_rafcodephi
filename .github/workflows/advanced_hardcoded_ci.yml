@@ -1,0 +1,91 @@
+name: Advanced Hardcoded CI Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  android-build:
+    runs-on: ubuntu-latest
+    env:
+      JAVA_VERSION: '17'
+      APK_OUT_DIR: app/build/outputs/apk
+      ABI32: armeabi-v7a
+      ABI64: arm64-v8a
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: gradle
+
+      - name: Build debug (signed) and release (unsigned)
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./gradlew --no-daemon clean assembleDebug assembleRelease
+
+      - name: Validate ABIs in debug APK (signed)
+        shell: bash
+        run: |
+          set -euo pipefail
+          DEBUG_APK="$(find "$APK_OUT_DIR/debug" -maxdepth 1 -type f -name 'termux-api-app_*.apk' | head -n1)"
+          test -n "$DEBUG_APK"
+          unzip -l "$DEBUG_APK" | grep -q "lib/${ABI32}/"
+          unzip -l "$DEBUG_APK" | grep -q "lib/${ABI64}/"
+
+      - name: Validate ABIs in release APK (unsigned)
+        shell: bash
+        run: |
+          set -euo pipefail
+          RELEASE_APK="$(find "$APK_OUT_DIR/release" -maxdepth 1 -type f -name 'termux-api-app_*.apk' | head -n1)"
+          test -n "$RELEASE_APK"
+          unzip -l "$RELEASE_APK" | grep -q "lib/${ABI32}/"
+          unzip -l "$RELEASE_APK" | grep -q "lib/${ABI64}/"
+
+      - name: Generate internal validation keystore
+        shell: bash
+        run: |
+          set -euo pipefail
+          keytool -genkeypair -v \
+            -keystore ci-validation.jks \
+            -storepass changeit \
+            -keypass changeit \
+            -alias ci-validation \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 3650 \
+            -dname "CN=CI Validation, OU=CI, O=Termux, L=NA, ST=NA, C=US"
+
+      - name: Sign release APK for internal validation
+        shell: bash
+        run: |
+          set -euo pipefail
+          RELEASE_APK="$(find "$APK_OUT_DIR/release" -maxdepth 1 -type f -name 'termux-api-app_*.apk' | head -n1)"
+          SIGNED_APK="${RELEASE_APK%.apk}-ci-signed.apk"
+          "$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -n1)/apksigner" sign \
+            --ks ci-validation.jks \
+            --ks-pass pass:changeit \
+            --key-pass pass:changeit \
+            --ks-key-alias ci-validation \
+            --out "$SIGNED_APK" \
+            "$RELEASE_APK"
+          "$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -n1)/apksigner" verify "$SIGNED_APK"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: advanced-hardcoded-apks
+          path: |
+            app/build/outputs/apk/debug/*.apk
+            app/build/outputs/apk/release/*.apk
+            ci-validation.jks
