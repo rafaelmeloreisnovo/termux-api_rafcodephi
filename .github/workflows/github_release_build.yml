@@ -22,10 +22,16 @@ jobs:
           exit_on_error() {
               echo "$1"
               echo "Deleting '$RELEASE_VERSION_NAME' release and '$GITHUB_REF' tag"
-              hub release delete "$RELEASE_VERSION_NAME"
-              git push --delete origin "$GITHUB_REF"
+              gh release delete "$RELEASE_VERSION_NAME" --yes
+              gh api --method DELETE "repos/${GITHUB_REPOSITORY}/git/${GITHUB_REF}"
               exit 1
           }
+
+
+          echo "Checking GitHub CLI availability"
+          if ! gh --version >/dev/null 2>&1; then
+            exit_on_error "GitHub CLI (gh) is required but not available in runner PATH."
+          fi
 
           echo "Setting vars"
           RELEASE_VERSION_NAME="${GITHUB_REF/refs\/tags\//}"
