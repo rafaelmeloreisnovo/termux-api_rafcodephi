@@ -24,6 +24,24 @@ Signature keys of all offered builds are different. Before you switch the
 installation source, you will have to uninstall the Termux application and
 all currently installed plugins. Check https://github.com/termux/termux-app#Installation for more info.
 
+## Build and release flows
+
+Use the correct build path depending on your goal:
+
+- **Validation build (debug / per-commit):**
+  - Command: `./gradlew assembleDebug`
+  - Purpose: local verification, CI checks, pull request validation.
+  - CI workflow: [`github_action_build.yml`](.github/workflows/github_action_build.yml) (builds and uploads debug APK artifacts).
+  - Output: debug APK artifacts from `app/build/outputs/apk/debug`.
+  - Important: published debug APK from workflow artifacts is **not** a substitute for the official release APK, especially for production permissions/use-cases.
+
+- **Official distribution build (signed release):**
+  - Command: `./gradlew assembleRelease`
+  - Purpose: official distributable release artifacts only.
+  - CI workflow: [`github_release_build.yml`](.github/workflows/github_release_build.yml) (builds release APK, checksums, uploads to GitHub Release).
+  - Requirement: release signing credentials must be provided securely via CI secrets. Do not commit keys, keystore files, or plaintext credentials to the repository.
+  - Rule: official release must be produced only from the `assembleRelease` path with secure signing configured in CI.
+
 ## License
 
 Released under the [GPLv3 license](http://www.gnu.org/licenses/gpl-3.0.en.html).
