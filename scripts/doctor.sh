@@ -9,6 +9,13 @@ command -v java >/dev/null 2>&1 && ok "Java detectado: $(java -version 2>&1 | he
 
 [[ -x ./gradlew ]] && ok "Gradle wrapper executável" || err "./gradlew não executável (rode: chmod +x ./gradlew)"
 
+java_major=$(java -version 2>&1 | awk -F '[\".]' '/version/ {print $2}')
+if [[ "$java_major" -lt 17 || "$java_major" -gt 22 ]]; then
+  warn "Versão Java atual ($java_major) pode quebrar Gradle/AGP deste projeto. Recomendado: Java 17..22."
+else
+  ok "Faixa Java compatível detectada para Gradle: $java_major"
+fi
+
 if [[ -n "${ANDROID_HOME:-}" && -d "${ANDROID_HOME}" ]]; then
   ok "ANDROID_HOME detectado: ${ANDROID_HOME}"
 elif [[ -n "${ANDROID_SDK_ROOT:-}" && -d "${ANDROID_SDK_ROOT}" ]]; then

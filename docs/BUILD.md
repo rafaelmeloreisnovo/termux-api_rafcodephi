@@ -48,3 +48,14 @@ Após build:
 - Release: `app/build/outputs/apk/release/`
 
 O projeto gera APKs por ABI (ex.: `armeabi-v7a` e `arm64-v8a`).
+
+
+## Menor fricção com Java (preflight)
+
+Se houver múltiplos JDKs no host, use:
+
+```bash
+./scripts/gradlew-safe.sh assembleDebug
+```
+
+O script tenta usar uma JVM compatível (17..22) via `JAVA17_HOME`, `JAVA21_HOME` ou `JAVA_HOME` antes de chamar `./gradlew`.

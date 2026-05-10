@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-./gradlew assembleDebug
+./scripts/gradlew-safe.sh assembleDebug
 
 out_dir="app/build/outputs/apk/debug"
 arm32_apk=$(find "$out_dir" -maxdepth 1 -type f -name '*armeabi-v7a*.apk' | head -n1 || true)
