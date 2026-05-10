@@ -69,6 +69,8 @@ Artifact naming includes ABI suffix:
 - Troubleshooting: [`docs/TROUBLESHOOTING.md`](docs/TROUBLESHOOTING.md)
 - Environment checks: [`scripts/doctor.sh`](scripts/doctor.sh)
 - Debug build helper: [`scripts/build-debug.sh`](scripts/build-debug.sh)
+- Developer debugger guide: [`docs/DEVELOPER_DEBUGGER.md`](docs/DEVELOPER_DEBUGGER.md)
+- Developer debugger helper: [`scripts/enable-debugger-mode.sh`](scripts/enable-debugger-mode.sh)
 
 ## License
 
