@@ -34,15 +34,31 @@ Use the correct build path depending on your goal:
   - Command: `./gradlew assembleDebug`
   - Purpose: local verification, CI checks, pull request validation.
   - CI workflow: [`github_action_build.yml`](.github/workflows/github_action_build.yml) (builds and uploads debug APK artifacts).
-  - Output: debug APK artifacts from `app/build/outputs/apk/debug`.
+  - Output: per-ABI debug APK artifacts (`armeabi-v7a`, `arm64-v8a`) from `app/build/outputs/apk/debug`.
   - Important: published debug APK from workflow artifacts is **not** a substitute for the official release APK, especially for production permissions/use-cases.
 
 - **Official distribution build (signed release):**
   - Command: `./gradlew assembleRelease`
   - Purpose: official distributable release artifacts only.
-  - CI workflow: [`github_release_build.yml`](.github/workflows/github_release_build.yml) (builds release APK, checksums, uploads to GitHub Release).
+  - CI workflow: [`github_release_build.yml`](.github/workflows/github_release_build.yml) (builds per-ABI release APKs, checksums, uploads to GitHub Release).
   - Requirement: release signing credentials must be provided securely via CI secrets. Do not commit keys, keystore files, or plaintext credentials to the repository.
   - Rule: official release must be produced only from the `assembleRelease` path with secure signing configured in CI.
+
+
+## Official ABI support matrix
+
+Termux:API artifacts are produced only for the ABIs below:
+
+| ABI | Arch | Validation (debug) | Official release |
+| --- | --- | --- | --- |
+| `armeabi-v7a` | ARM32 | ✅ | ✅ |
+| `arm64-v8a` | ARM64 | ✅ | ✅ |
+
+Build configuration uses ABI split packaging (`splits { abi { ... } }`) and emits one APK per ABI.
+Artifact naming includes ABI suffix:
+
+- Debug CI: `termux-api-app_<version>.github.debug-<abi>.apk`
+- Release CI: `termux-api-app_<version>-<abi>.apk`
 
 ## License
 
