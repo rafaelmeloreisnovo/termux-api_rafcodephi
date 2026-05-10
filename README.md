@@ -15,10 +15,12 @@ Latest version is `v0.53.0`.
 
 Termux:API application can be obtained from [F-Droid](https://f-droid.org/en/packages/com.termux.api/).
 
-Additionally we provide per-commit debug builds for those who want to try
-out the latest features or test their pull request. This build can be obtained
-from one of the workflow runs listed on [Github Actions](https://github.com/termux/termux-api/actions/workflows/github_action_build.yml?query=branch%3Amaster+event%3Apush)
-page.
+Additionally we provide per-commit **debug validation builds** for those who want to try
+out the latest features or test their pull request. These artifacts come from
+[`github_action_build.yml`](.github/workflows/github_action_build.yml) workflow runs on [GitHub Actions](https://github.com/termux/termux-api/actions/workflows/github_action_build.yml?query=branch%3Amaster+event%3Apush).
+
+These debug workflow APKs are for validation only and are **not** an official
+release substitute for production permission scenarios.
 
 Signature keys of all offered builds are different. Before you switch the
 installation source, you will have to uninstall the Termux application and
