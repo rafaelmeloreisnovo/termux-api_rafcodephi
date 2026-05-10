@@ -43,6 +43,15 @@ android {
         }
     }
 
+    splits {
+        abi {
+            enable true
+            reset()
+            include "armeabi-v7a", "arm64-v8a"
+            universalApk false
+        }
+    }
+
     compileOptions {
         // Flag to enable support for the new language APIs
         coreLibraryDesugaringEnabled true
@@ -53,8 +62,13 @@ android {
 
     applicationVariants.all { variant ->
         variant.outputs.all { output ->
-            outputFileName = new File("termux-api-app_" +
-                    (apkVersionTag ? apkVersionTag : "v" + versionName + "+" + variant.buildType.name) + ".apk")
+            def abi = output.getFilter(com.android.build.OutputFile.ABI)
+            def artifactTag = apkVersionTag ? apkVersionTag : "v" + versionName + "+" + variant.buildType.name
+            if (abi) {
+                outputFileName = "termux-api-app_${artifactTag}-${abi}.apk"
+            } else {
+                outputFileName = "termux-api-app_${artifactTag}.apk"
+            }
         }
     }
 
