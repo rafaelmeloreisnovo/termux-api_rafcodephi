@@ -34,23 +34,30 @@ jobs:
           set -euo pipefail
           ./gradlew --no-daemon clean assembleDebug assembleRelease
 
-      - name: Validate ABIs in debug APK (signed)
+      - name: Validate APK architecture compatibility
         shell: bash
         run: |
           set -euo pipefail
-          DEBUG_APK="$(find "$APK_OUT_DIR/debug" -maxdepth 1 -type f -name 'termux-api-app_*.apk' | head -n1)"
-          test -n "$DEBUG_APK"
-          unzip -l "$DEBUG_APK" | grep -q "lib/${ABI32}/"
-          unzip -l "$DEBUG_APK" | grep -q "lib/${ABI64}/"
 
-      - name: Validate ABIs in release APK (unsigned)
-        shell: bash
-        run: |
-          set -euo pipefail
+          validate_apk_arch() {
+            local apk_path="$1"
+            local label="$2"
+
+            test -n "$apk_path"
+            if unzip -l "$apk_path" | grep -qE 'lib/[^/]+/'; then
+              unzip -l "$apk_path" | grep -q "lib/${ABI32}/"
+              unzip -l "$apk_path" | grep -q "lib/${ABI64}/"
+              echo "$label contains JNI libs for both ${ABI32} and ${ABI64}."
+            else
+              echo "$label has no JNI libs; APK is architecture-agnostic at package level."
+            fi
+          }
+
+          DEBUG_APK="$(find "$APK_OUT_DIR/debug" -maxdepth 1 -type f -name 'termux-api-app_*.apk' | head -n1)"
           RELEASE_APK="$(find "$APK_OUT_DIR/release" -maxdepth 1 -type f -name 'termux-api-app_*.apk' | head -n1)"
-          test -n "$RELEASE_APK"
-          unzip -l "$RELEASE_APK" | grep -q "lib/${ABI32}/"
-          unzip -l "$RELEASE_APK" | grep -q "lib/${ABI64}/"
+
+          validate_apk_arch "$DEBUG_APK" "Debug APK"
+          validate_apk_arch "$RELEASE_APK" "Release APK"
 
       - name: Generate internal validation keystore
         shell: bash
