@@ -13,7 +13,7 @@ MODE="${1:-enable}"
 
 if [[ "$MODE" == "enable" ]]; then
   adb get-state >/dev/null 2>&1 || { echo "Erro: nenhum dispositivo adb conectado"; exit 1; }
-  adb shell pm list packages | rg -q "package:${PKG}" || { echo "Erro: pacote ${PKG} não instalado no dispositivo"; exit 1; }
+  adb shell pm list packages | grep -q "package:${PKG}" || { echo "Erro: pacote ${PKG} não instalado no dispositivo"; exit 1; }
   adb shell am set-debug-app -w "$PKG"
   echo "Debugger mode habilitado para ${PKG} (wait-for-debugger)."
 elif [[ "$MODE" == "disable" ]]; then
