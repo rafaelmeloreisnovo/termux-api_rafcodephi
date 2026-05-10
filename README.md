@@ -60,6 +60,21 @@ Artifact naming includes ABI suffix:
 - Debug CI: `termux-api-app_<version>.github.debug-<abi>.apk`
 - Release CI: `termux-api-app_<version>-<abi>.apk`
 
+
+## Quick start docs and scripts
+
+- Build guide: [`docs/BUILD.md`](docs/BUILD.md)
+- Permissions matrix: [`docs/PERMISSIONS.md`](docs/PERMISSIONS.md)
+- API methods index: [`docs/API_METHODS.md`](docs/API_METHODS.md)
+- Troubleshooting: [`docs/TROUBLESHOOTING.md`](docs/TROUBLESHOOTING.md)
+- Environment checks: [`scripts/doctor.sh`](scripts/doctor.sh)
+- Debug build helper: [`scripts/build-debug.sh`](scripts/build-debug.sh)
+- Safe Gradle launcher (Java preflight): [`scripts/gradlew-safe.sh`](scripts/gradlew-safe.sh)
+- Developer debugger guide: [`docs/DEVELOPER_DEBUGGER.md`](docs/DEVELOPER_DEBUGGER.md)
+- Developer debugger helper: [`scripts/enable-debugger-mode.sh`](scripts/enable-debugger-mode.sh)
+- Native lowlevel (C/ASM) notes: [`docs/NATIVE_LOWLEVEL.md`](docs/NATIVE_LOWLEVEL.md)
+- Build native helper: [`scripts/build-native-tools.sh`](scripts/build-native-tools.sh)
+
 ## License
 
 Released under the [GPLv3 license](http://www.gnu.org/licenses/gpl-3.0.en.html).
