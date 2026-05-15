@@ -72,6 +72,7 @@ Artifact naming includes ABI suffix:
 - Safe Gradle launcher (Java preflight): [`scripts/gradlew-safe.sh`](scripts/gradlew-safe.sh)
 - Developer debugger guide: [`docs/DEVELOPER_DEBUGGER.md`](docs/DEVELOPER_DEBUGGER.md)
 - Developer debugger helper: [`scripts/enable-debugger-mode.sh`](scripts/enable-debugger-mode.sh)
+- Android install diagnosis (ABI/signature): [`scripts/diagnose-install-android.sh`](scripts/diagnose-install-android.sh)
 - Native lowlevel (C/ASM) notes: [`docs/NATIVE_LOWLEVEL.md`](docs/NATIVE_LOWLEVEL.md)
 - Build native helper: [`scripts/build-native-tools.sh`](scripts/build-native-tools.sh)
 

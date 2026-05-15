@@ -60,6 +60,16 @@ Se houver múltiplos JDKs no host, use:
 
 O script tenta usar uma JVM compatível (17..22) via `JAVA17_HOME`, `JAVA21_HOME` ou `JAVA_HOME` antes de chamar `./gradlew`.
 
+## Diagnóstico de instalação por ABI/assinatura
+
+Após gerar APK, rode diagnóstico antes de instalar em aparelho físico:
+
+```bash
+./scripts/diagnose-install-android.sh app/build/outputs/apk/debug/<apk>.apk
+```
+
+Esse passo reduz falha mascarada em ARM32/ARM64 (incluindo Moto E7 Power) e detecta conflito de assinatura com instalação prévia.
+
 ## Compatibilidade alvo (Termux)
 
 - Android API 28+
