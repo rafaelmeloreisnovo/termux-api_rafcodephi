@@ -1,0 +1,163 @@
+name: Selectable Android APK Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_variant:
+        description: "Build variant"
+        required: true
+        default: "both"
+        type: choice
+        options:
+          - debug
+          - release
+          - both
+      sign_artifacts:
+        description: "Sign generated APK artifacts"
+        required: true
+        default: false
+        type: boolean
+      upload_individual_artifacts:
+        description: "Upload one artifact per ABI/variant in addition to the bundle"
+        required: true
+        default: true
+        type: boolean
+
+jobs:
+  build-apks:
+    runs-on: ubuntu-latest
+    env:
+      ABI32: armeabi-v7a
+      ABI64: arm64-v8a
+      APK_ROOT: app/build/outputs/apk
+      JAVA_VERSION: '17'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: gradle
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Resolve build targets
+        id: targets
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "${{ github.event.inputs.build_variant }}" in
+            debug)
+              echo "tasks=assembleDebug" >> "$GITHUB_OUTPUT"
+              echo "variants=debug" >> "$GITHUB_OUTPUT"
+              ;;
+            release)
+              echo "tasks=assembleRelease" >> "$GITHUB_OUTPUT"
+              echo "variants=release" >> "$GITHUB_OUTPUT"
+              ;;
+            both)
+              echo "tasks=assembleDebug assembleRelease" >> "$GITHUB_OUTPUT"
+              echo "variants=debug release" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "Unknown build_variant: ${{ github.event.inputs.build_variant }}" >&2
+              exit 64
+              ;;
+          esac
+
+      - name: Build selected variants
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./gradlew --no-daemon clean ${{ steps.targets.outputs.tasks }}
+
+      - name: Validate ABI outputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          for variant in ${{ steps.targets.outputs.variants }}; do
+            ./ci/validate-apk-abis.sh "$APK_ROOT/$variant" "$variant" "$ABI32" "$ABI64"
+          done
+
+      - name: Optional signing (internal validation only)
+        if: ${{ github.event.inputs.sign_artifacts == 'true' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          keytool -genkeypair -v \
+            -keystore ci-validation.jks \
+            -storepass changeit \
+            -keypass changeit \
+            -alias ci-validation \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 3650 \
+            -dname "CN=CI Validation, OU=CI, O=Termux, L=NA, ST=NA, C=US"
+
+          BUILD_TOOLS_DIR="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -n1)"
+          for variant in ${{ steps.targets.outputs.variants }}; do
+            for abi in "$ABI32" "$ABI64"; do
+              INPUT_APK="$(find "$APK_ROOT/$variant" -maxdepth 1 -type f -name "termux-api-app_*-${abi}.apk" | head -n1)"
+              OUTPUT_APK="${INPUT_APK%.apk}-ci-signed.apk"
+              "$BUILD_TOOLS_DIR/apksigner" sign \
+                --ks ci-validation.jks \
+                --ks-pass pass:changeit \
+                --key-pass pass:changeit \
+                --ks-key-alias ci-validation \
+                --out "$OUTPUT_APK" \
+                "$INPUT_APK"
+              "$BUILD_TOOLS_DIR/apksigner" verify "$OUTPUT_APK"
+            done
+          done
+
+      - name: Generate checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          for variant in ${{ steps.targets.outputs.variants }}; do
+            sha256sum "$APK_ROOT/$variant"/*.apk > "$APK_ROOT/$variant/checksums-sha256.txt"
+          done
+
+      - name: Upload bundled artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: selectable-apks-${{ github.run_number }}
+          path: |
+            app/build/outputs/apk/debug/*.apk
+            app/build/outputs/apk/debug/checksums-sha256.txt
+            app/build/outputs/apk/release/*.apk
+            app/build/outputs/apk/release/checksums-sha256.txt
+            ci-validation.jks
+          if-no-files-found: ignore
+
+      - name: Upload debug ARM32
+        if: ${{ github.event.inputs.upload_individual_artifacts == 'true' && (github.event.inputs.build_variant == 'debug' || github.event.inputs.build_variant == 'both') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-armeabi-v7a
+          path: app/build/outputs/apk/debug/*-armeabi-v7a*.apk
+
+      - name: Upload debug ARM64
+        if: ${{ github.event.inputs.upload_individual_artifacts == 'true' && (github.event.inputs.build_variant == 'debug' || github.event.inputs.build_variant == 'both') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-arm64-v8a
+          path: app/build/outputs/apk/debug/*-arm64-v8a*.apk
+
+      - name: Upload release ARM32
+        if: ${{ github.event.inputs.upload_individual_artifacts == 'true' && (github.event.inputs.build_variant == 'release' || github.event.inputs.build_variant == 'both') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-armeabi-v7a
+          path: app/build/outputs/apk/release/*-armeabi-v7a*.apk
+
+      - name: Upload release ARM64
+        if: ${{ github.event.inputs.upload_individual_artifacts == 'true' && (github.event.inputs.build_variant == 'release' || github.event.inputs.build_variant == 'both') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-arm64-v8a
+          path: app/build/outputs/apk/release/*-arm64-v8a*.apk
