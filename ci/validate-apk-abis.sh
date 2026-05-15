@@ -2,23 +2,31 @@
 set -euo pipefail
 
 if [ "$#" -lt 3 ]; then
-  echo "Usage: $0 <apk-path> <abi32> <abi64>" >&2
+  echo "Usage: $0 <apk-dir> <variant> <abi> [<abi> ...]" >&2
   exit 64
 fi
 
-apk_path="$1"
-abi32="$2"
-abi64="$3"
+apk_dir="$1"
+variant="$2"
+shift 2
+abis=("$@")
 
-if [ ! -f "$apk_path" ]; then
-  echo "APK not found: $apk_path" >&2
+if [ ! -d "$apk_dir" ]; then
+  echo "APK dir not found: $apk_dir" >&2
   exit 66
 fi
 
-if unzip -l "$apk_path" | grep -qE 'lib/[^/]+/'; then
-  unzip -l "$apk_path" | grep -q "lib/${abi32}/"
-  unzip -l "$apk_path" | grep -q "lib/${abi64}/"
-  echo "OK: $apk_path contains JNI libs for ${abi32} and ${abi64}."
-else
-  echo "OK: $apk_path has no JNI libs; package is ABI-agnostic."
-fi
+for abi in "${abis[@]}"; do
+  apk_path="$(find "$apk_dir" -maxdepth 1 -type f -name "termux-api-app_*-${abi}.apk" | head -n1)"
+  if [ -z "$apk_path" ]; then
+    echo "Missing ${variant} APK for ABI '${abi}' in '$apk_dir'." >&2
+    find "$apk_dir" -maxdepth 1 -type f -name '*.apk' -printf '%f\n' | sort >&2 || true
+    exit 65
+  fi
+
+  if unzip -l "$apk_path" | grep -qE 'lib/[^/]+/'; then
+    unzip -l "$apk_path" | grep -q "lib/${abi}/"
+  fi
+
+  echo "OK: ${variant} ABI '${abi}' => $(basename "$apk_path")"
+done
