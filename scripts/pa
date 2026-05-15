@@ -1,0 +1,154 @@
+#!/data/data/com.termux/files/usr/bin/bash
+PA="$HOME/PEDRA_ANGULAR"
+source "$PA/.env" 2>/dev/null
+CMD="$1"; shift
+
+case "$CMD" in
+
+  c)
+    src="${1:-$PA/c/src/hello.c}"
+    out="$PA/bin/$(basename ${src%.c})"
+    clang $CF_ARM $CF_REL "$src" -o "$out" && echo "✓ $out" && "$out"
+    ;;
+  c-debug)
+    src="${1:-$PA/c/src/hello.c}"
+    out="$PA/bin/$(basename ${src%.c})_dbg"
+    clang $CF_ARM $CF_DBG "$src" -o "$out" && echo "✓ $out" && "$out"
+    ;;
+  c-size)
+    src="${1:-$PA/c/src/hello.c}"
+    out="$PA/bin/$(basename ${src%.c})_small"
+    clang $CF_ARM $CF_SIZE "$src" -o "$out"
+    echo "✓ $out  $(ls -lh $out | awk '{print $5}')"
+    ;;
+  c-neon)
+    clang $CF_ARM -O2 "$PA/c/src/neon_demo.c" -o "$PA/bin/neon_demo" && \
+    "$PA/bin/neon_demo"
+    ;;
+
+  asm)
+    bash "$PA/asm/build.sh"
+    ;;
+  asm-run)
+    src="${1:-$PA/asm/src/hello_arm.s}"
+    out="$PA/bin/$(basename ${src%.s})"
+    clang -x assembler "$src" -o "$out" -nostdlib && "$out"
+    ;;
+
+  rs)
+    proj="${1:-hello_pa}"
+    cd "$PA/rust/projects/$proj" && \
+    cargo build 2>&1 | grep -E "Compiling|Finished|error" && \
+    ./target/debug/"$proj"
+    ;;
+  rs-release)
+    proj="${1:-hello_pa}"
+    cd "$PA/rust/projects/$proj" && \
+    cargo build --release 2>&1 | grep -E "Finished|error" && \
+    cp "target/release/$proj" "$PA/bin/" && \
+    echo "✓ $PA/bin/$proj"
+    ;;
+
+  s|sensor)
+    sub="${1:-list}"; shift
+    case "$sub" in
+      battery|bat)  "$PA/scripts/s_battery.sh" ;;
+      accel)        "$PA/scripts/s_accel.sh"  "$@" ;;
+      gyro)         "$PA/scripts/s_gyro.sh"   "$@" ;;
+      gps)          "$PA/scripts/s_gps.sh" ;;
+      wifi)         "$PA/scripts/s_wifi.sh" ;;
+      mic)          "$PA/scripts/s_mic.sh"    "$@" ;;
+      light|lux)    "$PA/scripts/s_light.sh"  "$@" ;;
+      any|gen)      "$PA/scripts/s_generic.sh" "$@" ;;
+      list)         "$PA/scripts/s_list.sh" ;;
+      dash)         "$PA/scripts/s_dash.sh" ;;
+      *)
+        echo "sensor: battery accel gyro gps wifi mic light any list dash"
+        ;;
+    esac
+    ;;
+
+  flags)
+    sub="${1:-c}"
+    case "$sub" in
+      c|asm|rs) cat "$PA/flags/$sub/arm32.txt" ;;
+      *)        ls "$PA/flags/" ;;
+    esac
+    ;;
+
+  dis)
+    bin="${1:-$PA/c/bin/hello_dbg}"
+    objdump -d "$bin" | head -80
+    ;;
+  size)
+    bin="${1:-$PA/c/bin/hello_rel}"
+    size "$bin" 2>/dev/null; ls -lh "$bin"
+    ;;
+
+  info)
+    echo "╔═══════════════════════════════════╗"
+    echo "║       PEDRA_ANGULAR — info        ║"
+    echo "╚═══════════════════════════════════╝"
+    echo "Root    : $PA"
+    echo "Arch    : $(uname -m)"
+    echo "Kernel  : $(uname -r)"
+    echo "Android : $(getprop ro.build.version.release 2>/dev/null)"
+    echo "Device  : $(getprop ro.product.model 2>/dev/null)"
+    echo "Build   : $(getprop ro.build.display.id 2>/dev/null)"
+    echo "Clang   : $(clang --version 2>/dev/null | head -1)"
+    echo "Rust    : $(rustc --version 2>/dev/null)"
+    echo "Python  : $(python3 --version 2>/dev/null)"
+    echo ""
+    echo "── Binários:"
+    ls -lh "$PA/bin/" 2>/dev/null || echo "  (vazio)"
+    echo "── Disco:"
+    du -sh "$PA"/* 2>/dev/null
+    ;;
+
+  clean)
+    rm -f "$PA/bin/"*
+    echo "✓ Binários removidos"
+    ;;
+
+  help|"")
+    echo "PEDRA_ANGULAR — pa <comando> [args]"
+    echo ""
+    echo "  C:"
+    echo "    c [src]           compile release"
+    echo "    c-debug [src]     compile debug"
+    echo "    c-size [src]      compile mínimo"
+    echo "    c-neon            demo NEON"
+    echo ""
+    echo "  ASM:"
+    echo "    asm               build todos .s"
+    echo "    asm-run [src]     compila + executa"
+    echo ""
+    echo "  Rust:"
+    echo "    rs [proj]         cargo build dev"
+    echo "    rs-release [p]    cargo build release"
+    echo ""
+    echo "  Sensores:"
+    echo "    s battery         bateria"
+    echo "    s accel [n]       acelerômetro"
+    echo "    s gyro  [n]       giroscópio"
+    echo "    s gps             localização"
+    echo "    s wifi            WiFi"
+    echo "    s mic [s]         gravar áudio"
+    echo "    s light [n]       luminosidade lux"
+    echo "    s any SENSOR [n]  qualquer sensor"
+    echo "    s list            lista sensores"
+    echo "    s dash            dashboard live"
+    echo ""
+    echo "  Análise:"
+    echo "    flags c|asm|rs    referência flags"
+    echo "    dis [bin]         disassembly"
+    echo "    size [bin]        tamanho seções"
+    echo "    info              status sistema"
+    echo "    clean             limpa binários"
+    ;;
+
+  *)
+    echo "Desconhecido: $CMD — use: pa help"
+    ;;
+
+esac
