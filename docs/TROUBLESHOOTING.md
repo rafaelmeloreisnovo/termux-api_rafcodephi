@@ -52,3 +52,18 @@
 **Causa:** ABI incompatível com a CPU do aparelho.
 
 **Ação:** usar o APK correto para `armeabi-v7a` (ARM32) ou `arm64-v8a` (ARM64).
+
+### Diagnóstico guiado via ADB
+
+Para identificar a causa raiz em dispositivos como **Moto E7 Power** (variações ARM32/ARM64 e conflitos de assinatura), rode:
+
+```bash
+./scripts/diagnose-install-android.sh app/build/outputs/apk/debug/<apk>.apk
+```
+
+O script valida:
+- ABI do aparelho (`ro.product.cpu.abi`, `ro.product.cpu.abilist`)
+- `minSdk` do APK vs API do dispositivo
+- `native-code` do APK (arm32/arm64)
+- conflito de atualização por assinatura (`INSTALL_FAILED_UPDATE_INCOMPATIBLE`)
+
