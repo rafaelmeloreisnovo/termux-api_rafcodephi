@@ -60,6 +60,16 @@ Se houver múltiplos JDKs no host, use:
 
 O script tenta usar uma JVM compatível (17..22) via `JAVA17_HOME`, `JAVA21_HOME` ou `JAVA_HOME` antes de chamar `./gradlew`.
 
+## Diagnóstico de instalação por ABI/assinatura
+
+Após gerar APK, rode diagnóstico antes de instalar em aparelho físico:
+
+```bash
+./scripts/diagnose-install-android.sh app/build/outputs/apk/debug/<apk>.apk
+```
+
+Esse passo reduz falha mascarada em ARM32/ARM64 (incluindo Moto E7 Power) e detecta conflito de assinatura com instalação prévia.
+
 ## Compatibilidade alvo (Termux)
 
 - Android API 28+
@@ -79,3 +89,22 @@ Isso mantém dois trilhos explícitos:
 
 - **Trilho oficial**: release oficial (chave real) permanece intacto.
 - **Trilho interno de validação**: signed CI transitório para testes automatizados.
+
+## Workflow selecionável (signed/unsigned + ARM32/ARM64 + uploads individuais)
+
+O workflow `.github/workflows/selectable_android_artifacts.yml` permite execução manual com parâmetros:
+
+- `build_variant`: `debug`, `release` ou `both`.
+- `sign_artifacts`: `true/false` para gerar também APKs `*-ci-signed.apk` com keystore efêmera de validação interna.
+- `upload_individual_artifacts`: `true/false` para publicar artefatos separados por ABI/variant.
+
+Saídas:
+
+- Artefato bundle com APKs + `checksums-sha256.txt`.
+- Upload individual opcional:
+  - `debug-armeabi-v7a`
+  - `debug-arm64-v8a`
+  - `release-armeabi-v7a`
+  - `release-arm64-v8a`
+
+A assinatura gerada por esse workflow é **somente para validação interna de CI** e não substitui a trilha oficial de assinatura de release.

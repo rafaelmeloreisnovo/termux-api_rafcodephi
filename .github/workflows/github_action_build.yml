@@ -59,8 +59,8 @@ jobs:
             apk_path="$APK_DIR_PATH/${APK_BASENAME_PREFIX}-${abi}.apk"
             if ! test -f "$apk_path"; then
               files_found="$(ls "$APK_DIR_PATH")"
-              exit_on_error "Failed to find built ABI APK file at '$apk_path'. Files found: "$'
-'"$files_found"
+              exit_on_error "Failed to find built ABI APK file at '$apk_path'. Files found:
+              $files_found"
             fi
           done
 

@@ -41,10 +41,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          DEBUG_APK="$(find "$APK_OUT_DIR/debug" -maxdepth 1 -type f -name 'termux-api-app_*.apk' | head -n1)"
-          RELEASE_APK="$(find "$APK_OUT_DIR/release" -maxdepth 1 -type f -name 'termux-api-app_*.apk' | head -n1)"
-          ./ci/validate-apk-abis.sh "$DEBUG_APK" "$ABI32" "$ABI64"
-          ./ci/validate-apk-abis.sh "$RELEASE_APK" "$ABI32" "$ABI64"
+          ./ci/validate-apk-abis.sh "$APK_OUT_DIR/debug" "debug" "$ABI32" "$ABI64"
+          ./ci/validate-apk-abis.sh "$APK_OUT_DIR/release" "release" "$ABI32" "$ABI64"
 
       - name: Generate internal validation keystore
         shell: bash
@@ -60,21 +58,23 @@ jobs:
             -validity 3650 \
             -dname "CN=CI Validation, OU=CI, O=Termux, L=NA, ST=NA, C=US"
 
-      - name: Sign release APK for internal validation
+      - name: Sign release APKs for internal validation
         shell: bash
         run: |
           set -euo pipefail
           BUILD_TOOLS_DIR="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -n1)"
-          RELEASE_APK="$(find "$APK_OUT_DIR/release" -maxdepth 1 -type f -name 'termux-api-app_*.apk' | head -n1)"
-          SIGNED_APK="${RELEASE_APK%.apk}-ci-signed.apk"
-          "$BUILD_TOOLS_DIR/apksigner" sign \
-            --ks ci-validation.jks \
-            --ks-pass pass:changeit \
-            --key-pass pass:changeit \
-            --ks-key-alias ci-validation \
-            --out "$SIGNED_APK" \
-            "$RELEASE_APK"
-          "$BUILD_TOOLS_DIR/apksigner" verify "$SIGNED_APK"
+          for abi in "$ABI32" "$ABI64"; do
+            RELEASE_APK="$(find "$APK_OUT_DIR/release" -maxdepth 1 -type f -name "termux-api-app_*-${abi}.apk" | head -n1)"
+            SIGNED_APK="${RELEASE_APK%.apk}-ci-signed.apk"
+            "$BUILD_TOOLS_DIR/apksigner" sign \
+              --ks ci-validation.jks \
+              --ks-pass pass:changeit \
+              --key-pass pass:changeit \
+              --ks-key-alias ci-validation \
+              --out "$SIGNED_APK" \
+              "$RELEASE_APK"
+            "$BUILD_TOOLS_DIR/apksigner" verify "$SIGNED_APK"
+          done
 
       - name: Generate checksums
         shell: bash
