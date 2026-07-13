@@ -114,13 +114,11 @@ attractor_table:
     ldr     w4, [x12]                  /* w4 = attractor_table[phase] */
 
     /* VOID paradox guard (AGENTS.md #22):
-     * If att == 0 (VOID attractor), set FL_VOID in flags, keep att unchanged
-     * via csel: att = csel(att != 0, att, prev_att) is NOT right since we
-     * want to DETECT it. Correct: set flag bit, keep att = 0 as is (don't patch),
-     * but log: flags |= FL_VOID when att == 0 */
+     * If att == 0 (VOID attractor), set FL_VOID (bit 2) in flags.
+     * cset: w11=1 if eq (att==0), then lsl to bit 2 = 0x4 */
     cmp     w4, #0                     /* test for VOID (att == 0) */
-    mov     w11, #4                    /* FL_VOID = bit 2 */
-    csinc   w11, wzr, wzr, ne         /* w11 = FL_VOID if att==0, else 0 */
+    cset    w11, eq                    /* w11 = 1 if att==0, else 0 */
+    lsl     w11, w11, #2              /* w11 = 4 (FL_VOID bit 2) if VOID, else 0 */
     orr     w7, w7, w11               /* flags |= FL_VOID (branchless OR) */
 
     /* H ^= fnv[31:0] (entropy perturbation) */
@@ -329,8 +327,10 @@ vectra_pulse_step:
     str     r2, [r0, #12]
     str     r3, [r0, #16]
     str     r5, [r0, #20]
-    /* attractor = r4 from table (overwritten by FNV prime — reload) */
-    ldr     r4, [r0, #24]             /* keep old attractor value */
+    /* attractor: reload from table (r4 clobbered by FNV prime setup above) */
+    adr     r4, attractor_table
+    ldr     r4, [r4, r3, lsl #2]
+    str     r4, [r0, #24]
     /* update event_count */
     ldr     r4, [r0, #32]
     add     r4, r4, #1
