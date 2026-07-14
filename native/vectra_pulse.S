@@ -127,7 +127,7 @@ attractor_table:
     /* FNV step: fnv = (fnv ^ att) * FNV_PRIME[47:0] */
     eor     x6, x6, x4                /* fnv ^= att */
     movz    x10, #0x01B3
-    movk    x10, #0x0001, lsl #16     /* FNV_PRIME low 32 */
+    movk    x10, #0x0001, lsl #32     /* FNV_PRIME = 0x100000001B3 */
     mul     x6, x6, x10              /* fnv *= FNV_PRIME */
 
     /* delta = C ^ H (Q16.16 perturbation metric) */
@@ -338,6 +338,95 @@ vectra_pulse_step:
 
     pop     {r4, r5, r6, r7, pc}
 .size vectra_pulse_step, . - vectra_pulse_step
+
+/*
+ * vectra_pulse_burst — run N collapse steps (ARM32)
+ * void vectra_pulse_burst(VectraState *st, uint32_t n)
+ * r0=st r1=n — all step logic inlined, no bl
+ */
+.global vectra_pulse_burst
+.type   vectra_pulse_burst, %function
+vectra_pulse_burst:
+    push    {r4, r5, r6, r7, r8, lr}
+    mov     r8, r1                    @ save n
+    cmp     r8, #0
+    beq     .L_burst_done
+.L_burst_loop:
+    ldrd    r6, r7, [r0, #0]          @ fnv_lo, fnv_hi
+    ldr     r1, [r0, #8]              @ C
+    ldr     r2, [r0, #12]             @ H
+    ldr     r3, [r0, #16]             @ phase
+    ldr     r5, [r0, #20]             @ flags
+    @ C *= PHI32
+    movw    r4, #0x79B9
+    movt    r4, #0x9E37
+    mul     r1, r1, r4
+    @ phase = (phase + 1) mod 42 branchless
+    add     r3, r3, #1
+    cmp     r3, #42
+    subge   r3, r3, #42
+    @ attractor[phase]
+    adr     r4, attractor_table
+    ldr     r4, [r4, r3, lsl #2]
+    @ VOID guard
+    cmp     r4, #0
+    orreq   r5, r5, #4
+    @ H ^= fnv_lo
+    eor     r2, r2, r6
+    @ FNV step
+    eor     r6, r6, r4
+    movw    r4, #0x01B3
+    movt    r4, #0x0001
+    mul     r6, r6, r4
+    @ store
+    strd    r6, r7, [r0, #0]
+    str     r1, [r0, #8]
+    str     r2, [r0, #12]
+    str     r3, [r0, #16]
+    str     r5, [r0, #20]
+    adr     r4, attractor_table       @ reload (r4 clobbered by FNV prime)
+    ldr     r4, [r4, r3, lsl #2]
+    str     r4, [r0, #24]
+    ldr     r4, [r0, #32]
+    add     r4, r4, #1
+    str     r4, [r0, #32]
+    subs    r8, r8, #1
+    bne     .L_burst_loop
+.L_burst_done:
+    pop     {r4, r5, r6, r7, r8, pc}
+.size vectra_pulse_burst, . - vectra_pulse_burst
+
+/*
+ * vectra_pulse_crc32c — SW CRC32C branchless byte loop (ARM32, no HW CRC)
+ * uint32_t vectra_pulse_crc32c(const void *buf, uint32_t len)
+ * r0=buf r1=len → r0=crc32c
+ */
+.global vectra_pulse_crc32c
+.type   vectra_pulse_crc32c, %function
+vectra_pulse_crc32c:
+    push    {r4, r5, lr}
+    mvn     r2, #0                    @ crc = 0xFFFFFFFF
+    movw    r5, #0x3B78
+    movt    r5, #0x82F6               @ CRC32C_POLY = 0x82F63B78
+    cmp     r1, #0
+    beq     .L_arm32_crc_done
+.L_arm32_crc_byte:
+    ldrb    r3, [r0], #1
+    eor     r2, r2, r3
+    @ 8-bit unrolled branchless CRC32C
+    .rept 8
+    lsr     r4, r2, #1
+    and     r3, r2, #1
+    rsb     r3, r3, #0
+    and     r3, r3, r5
+    eor     r2, r4, r3
+    .endr
+    subs    r1, r1, #1
+    bne     .L_arm32_crc_byte
+.L_arm32_crc_done:
+    mvn     r0, r2                    @ return ~crc
+    pop     {r4, r5, pc}
+.size vectra_pulse_crc32c, . - vectra_pulse_crc32c
 
 /*
  * vectra_pulse_cycle_read — ARM generic timer via MRRC
