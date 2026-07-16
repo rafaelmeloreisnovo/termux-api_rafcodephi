@@ -321,20 +321,21 @@ vectra_pulse_step:
     movt    r4, #0x0001
     mul     r6, r6, r4
 
-    /* Store */
-    strd    r6, r7, [r0, #0]
-    str     r1, [r0, #8]
-    str     r2, [r0, #12]
-    str     r3, [r0, #16]
-    str     r5, [r0, #20]
-    /* attractor: reload from table (r4 clobbered by FNV prime setup above) */
+    /* delta = C ^ H (mirrors ARM64 COLLAPSE_STEP w5 = eor w5,w1,w2) */
+    eor     r4, r1, r2
+    /* Store all state fields */
+    strd    r6, r7, [r0, #0]          @ fnv lo+hi
+    str     r1, [r0, #8]              @ C
+    str     r2, [r0, #12]             @ H
+    str     r3, [r0, #16]             @ phase
+    str     r5, [r0, #20]             @ flags
+    str     r4, [r0, #28]             @ delta (store before r4 is clobbered below)
     adr     r4, attractor_table
     ldr     r4, [r4, r3, lsl #2]
-    str     r4, [r0, #24]
-    /* update event_count */
+    str     r4, [r0, #24]             @ attractor
     ldr     r4, [r0, #32]
     add     r4, r4, #1
-    str     r4, [r0, #32]
+    str     r4, [r0, #32]             @ event_count
 
     pop     {r4, r5, r6, r7, pc}
 .size vectra_pulse_step, . - vectra_pulse_step
@@ -378,18 +379,21 @@ vectra_pulse_burst:
     movw    r4, #0x01B3
     movt    r4, #0x0001
     mul     r6, r6, r4
+    @ delta = C ^ H (mirrors ARM64 eor w5,w1,w2; r4 free after FNV mul)
+    eor     r4, r1, r2
     @ store
     strd    r6, r7, [r0, #0]
     str     r1, [r0, #8]
     str     r2, [r0, #12]
     str     r3, [r0, #16]
     str     r5, [r0, #20]
-    adr     r4, attractor_table       @ reload (r4 clobbered by FNV prime)
+    str     r4, [r0, #28]             @ delta
+    adr     r4, attractor_table       @ reload (r4 clobbered by delta)
     ldr     r4, [r4, r3, lsl #2]
-    str     r4, [r0, #24]
+    str     r4, [r0, #24]             @ attractor
     ldr     r4, [r0, #32]
     add     r4, r4, #1
-    str     r4, [r0, #32]
+    str     r4, [r0, #32]             @ event_count
     subs    r8, r8, #1
     bne     .L_burst_loop
 .L_burst_done:
