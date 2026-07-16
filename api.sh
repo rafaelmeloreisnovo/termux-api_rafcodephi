@@ -796,6 +796,11 @@ case "$CMD" in
     echo "Bugs abertos: BUG-01 BUG-02 BUG-03 BUG-04"
     echo "  (ver docs/AGENTS.md para detalhes)"
     ;;
+  numbase)
+    # Delega para scripts/s_numbase.sh
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/scripts"
+    bash "$SCRIPT_DIR/s_numbase.sh" "$@"
+    ;;
   help|"")
     _banner
     echo ""
@@ -805,11 +810,14 @@ case "$CMD" in
     echo "  gen-ci [dir]   gera .github/workflows/build.yml"
     echo "  gen-all        gera AGENTS.md + SKILL.md + CI no diretório atual"
     echo "  info           manifesto do sistema"
+    echo "  numbase [sub]  bases numéricas, sequências, curvatura do zero"
     echo "  help           este menu"
     echo ""
     echo "  Ex: bash api.sh install"
     echo "  Ex: bash api.sh gen-all"
-    echo "  Ex: bash api.sh gen-agents > AGENTS.md"
+    echo "  Ex: bash api.sh numbase zerocurve 7 10"
+    echo "  Ex: bash api.sh numbase special"
+    echo "  Ex: bash api.sh numbase pisano 10"
     ;;
   *)
     echo "Desconhecido: $CMD — use: bash api.sh help"

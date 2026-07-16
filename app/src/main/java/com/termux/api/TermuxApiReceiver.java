@@ -10,6 +10,7 @@ import android.widget.Toast;
 
 import com.termux.api.apis.AudioAPI;
 import com.termux.api.apis.BatteryStatusAPI;
+import com.termux.api.apis.MathBaseAPI;
 import com.termux.api.apis.BrightnessAPI;
 import com.termux.api.apis.CallLogAPI;
 import com.termux.api.apis.CameraInfoAPI;
@@ -155,6 +156,9 @@ public class TermuxApiReceiver extends BroadcastReceiver {
                 break;
             case "MediaPlayer":
                 MediaPlayerAPI.onReceive(context, intent);
+                break;
+            case "NumericBase":
+                MathBaseAPI.onReceive(this, context, intent);
                 break;
             case "MediaScanner":
                 MediaScannerAPI.onReceive(this, context, intent);
