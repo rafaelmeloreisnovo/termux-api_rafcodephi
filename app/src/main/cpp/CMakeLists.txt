@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.22.1)
 project(vectra_pulse C ASM)
 
 add_library(vectra_pulse SHARED
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../../native/vectra_pulse.S
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../../../native/vectra_pulse.S
     vectra_pulse_jni.c
 )
 

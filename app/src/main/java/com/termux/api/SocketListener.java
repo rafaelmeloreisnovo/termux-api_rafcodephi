@@ -11,6 +11,7 @@ import com.termux.shared.termux.TermuxConstants;
 import java.io.BufferedWriter;
 import java.io.DataInputStream;
 import java.io.OutputStreamWriter;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
@@ -29,7 +30,11 @@ public class SocketListener {
     private static final Pattern EXTRA_LONG_LIST = Pattern.compile("--ela +([^ ]+) +(-?[0-9]+(?:,-?[0-9]+)*)");
     private static final Pattern EXTRA_UNSUPPORTED = Pattern.compile("--e[^izs ] +[^ ]+ +[^ ]+");
     private static final Pattern ACTION = Pattern.compile("-a *([^ ]+)");
-    
+
+    /* Native integrity layer — single-threaded listener, no lock needed */
+    private static final ByteBuffer DIRECT_BUF = ByteBuffer.allocateDirect(65535);
+    private static final ByteBuffer PULSE_STATE = VectraPulse.allocState();
+
     private static Thread listener = null;
 
     private static final String LOG_TAG = "SocketListener";
@@ -51,6 +56,11 @@ public class SocketListener {
                                 int length = in.readUnsignedShort();
                                 byte[] b = new byte[length];
                                 in.readFully(b);
+                                DIRECT_BUF.clear();
+                                DIRECT_BUF.put(b, 0, length);
+                                int reqCrc = VectraPulse.nativeCrc32c(DIRECT_BUF, length);
+                                VectraPulse.nativeStep(PULSE_STATE);
+                                Logger.logDebug(LOG_TAG, "req crc32c=0x" + Integer.toHexString(reqCrc));
                                 String cmdline = new String(b, StandardCharsets.UTF_8);
                         
                                 Intent intent = new Intent(app.getApplicationContext(), TermuxApiReceiver.class);
