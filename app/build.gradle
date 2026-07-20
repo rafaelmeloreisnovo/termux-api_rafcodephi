@@ -6,6 +6,7 @@ android {
     compileSdk project.properties.compileSdkVersion.toInteger()
     def appVersionName = System.getenv("TERMUX_API_APP__BUILD__APP_VERSION_NAME") ?: ""
     def apkVersionTag = System.getenv("TERMUX_API_APP__BUILD__APK_VERSION_TAG") ?: ""
+    def rafcodephiAppPackage = System.getenv("RAFCODEPHI_APP_PACKAGE_NAME") ?: "com.termux.rafacodephi"
 
     defaultConfig {
         applicationId "com.termux.api"
@@ -20,6 +21,8 @@ android {
         manifestPlaceholders.TERMUX_PACKAGE_NAME = "com.termux"
         manifestPlaceholders.TERMUX_APP_NAME = "Termux"
         manifestPlaceholders.TERMUX_API_APP_NAME = "Termux:API"
+        manifestPlaceholders.RAFCODEPHI_APP_PACKAGE = rafcodephiAppPackage
+        buildConfigField "String", "RAFCODEPHI_APP_PACKAGE", "\"${rafcodephiAppPackage}\""
 
         externalNativeBuild {
             cmake {
@@ -67,9 +70,7 @@ android {
     }
 
     compileOptions {
-        // Flag to enable support for the new language APIs
         coreLibraryDesugaringEnabled true
-
         sourceCompatibility JavaVersion.VERSION_11
         targetCompatibility JavaVersion.VERSION_11
     }
@@ -87,9 +88,12 @@ android {
     }
 
     packagingOptions {
-        // Remove terminal-emulator and termux-shared JNI libs added via termux-shared dependency
         exclude "lib/*/libtermux.so"
         exclude "lib/*/liblocal-socket.so"
+    }
+
+    buildFeatures {
+        buildConfig true
     }
 }
 
@@ -118,8 +122,6 @@ task versionName {
 
 @SuppressWarnings("UnnecessaryQualifiedReference")
 static def validateVersionName(String versionName) {
-    // https://semver.org/spec/v2.0.0.html#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
-    // ^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$
     if (!java.util.regex.Pattern.matches("^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?\$", versionName))
         throw new GradleException("The versionName '" + versionName + "' is not a valid version as per semantic version '2.0.0' spec in the format 'major.minor.patch(-prerelease)(+buildmetadata)'. https://semver.org/spec/v2.0.0.html.")
 }
