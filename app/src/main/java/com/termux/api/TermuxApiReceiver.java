@@ -30,6 +30,7 @@ import com.termux.api.apis.MicRecorderAPI;
 import com.termux.api.apis.NfcAPI;
 import com.termux.api.apis.NotificationAPI;
 import com.termux.api.apis.NotificationListAPI;
+import com.termux.api.apis.RafSensorBridgeAPI;
 import com.termux.api.apis.SAFAPI;
 import com.termux.api.apis.SensorAPI;
 import com.termux.api.apis.ShareAPI;
@@ -198,7 +199,23 @@ public class TermuxApiReceiver extends BroadcastReceiver {
                 SAFAPI.onReceive(this, context, intent);
                 break;
             case "Sensor":
-                SensorAPI.onReceive(context, intent);
+                if (!RafSensorBridgeAPI.shouldHandle(intent)) {
+                    SensorAPI.onReceive(context, intent);
+                } else if (!RafSensorBridgeAPI.isTargetAvailable(context)) {
+                    RafSensorBridgeAPI.returnTargetMissing(context, intent);
+                } else if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent, RafSensorBridgeAPI.permissionName())) {
+                    RafSensorBridgeAPI.onReceive(this, context, intent);
+                }
+                break;
+            case "RafSensor":
+                if (!RafSensorBridgeAPI.isTargetAvailable(context)) {
+                    RafSensorBridgeAPI.returnTargetMissing(context, intent);
+                } else if (TermuxApiPermissionActivity.checkAndRequestPermissions(context, intent, RafSensorBridgeAPI.permissionName())) {
+                    RafSensorBridgeAPI.onReceive(this, context, intent);
+                }
+                break;
+            case "RafSensorResult":
+                RafSensorBridgeAPI.onResult(this, context, intent);
                 break;
             case "Share":
                 ShareAPI.onReceive(this, context, intent);
