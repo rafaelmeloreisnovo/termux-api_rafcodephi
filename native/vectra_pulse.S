@@ -28,6 +28,7 @@
  * Sequence demonstrates toroidal traversal: gcd(PHI32, 2^32) = 1 ✓
  */
 .global attractor_table
+.hidden attractor_table  /* non-preemptible: permits direct PC-relative access in Android .so */
 .type   attractor_table, %object
 attractor_table:
     .word 0x00009E37  /* [ 0] C=0.617..  phi^1  */
@@ -358,89 +359,75 @@ vectra_pulse_burst:
     ldr     r2, [r0, #12]             @ H
     ldr     r3, [r0, #16]             @ phase
     ldr     r5, [r0, #20]             @ flags
-    @ C *= PHI32
     movw    r4, #0x79B9
     movt    r4, #0x9E37
     mul     r1, r1, r4
-    @ phase = (phase + 1) mod 42 branchless
     add     r3, r3, #1
     cmp     r3, #42
     subge   r3, r3, #42
-    @ attractor[phase]
     adr     r4, attractor_table
     ldr     r4, [r4, r3, lsl #2]
-    @ VOID guard
     cmp     r4, #0
     orreq   r5, r5, #4
-    @ H ^= fnv_lo
     eor     r2, r2, r6
-    @ FNV step
     eor     r6, r6, r4
     movw    r4, #0x01B3
     movt    r4, #0x0001
     mul     r6, r6, r4
-    @ delta = C ^ H (mirrors ARM64 eor w5,w1,w2; r4 free after FNV mul)
-    eor     r4, r1, r2
-    @ store
+    eor     r4, r1, r2                @ delta = C ^ H
     strd    r6, r7, [r0, #0]
     str     r1, [r0, #8]
     str     r2, [r0, #12]
     str     r3, [r0, #16]
     str     r5, [r0, #20]
     str     r4, [r0, #28]             @ delta
-    adr     r4, attractor_table       @ reload (r4 clobbered by delta)
+    adr     r4, attractor_table
     ldr     r4, [r4, r3, lsl #2]
-    str     r4, [r0, #24]             @ attractor
+    str     r4, [r0, #24]
     ldr     r4, [r0, #32]
     add     r4, r4, #1
-    str     r4, [r0, #32]             @ event_count
+    str     r4, [r0, #32]
     subs    r8, r8, #1
     bne     .L_burst_loop
 .L_burst_done:
     pop     {r4, r5, r6, r7, r8, pc}
 .size vectra_pulse_burst, . - vectra_pulse_burst
 
-/*
- * vectra_pulse_crc32c — SW CRC32C branchless byte loop (ARM32, no HW CRC)
- * uint32_t vectra_pulse_crc32c(const void *buf, uint32_t len)
- * r0=buf r1=len → r0=crc32c
- */
+/* ARM32 software CRC32C (Castagnoli reflected polynomial 0x82F63B78) */
 .global vectra_pulse_crc32c
 .type   vectra_pulse_crc32c, %function
 vectra_pulse_crc32c:
     push    {r4, r5, lr}
-    mvn     r2, #0                    @ crc = 0xFFFFFFFF
-    movw    r5, #0x3B78
-    movt    r5, #0x82F6               @ CRC32C_POLY = 0x82F63B78
+    mov     r2, #-1                   @ crc = 0xFFFFFFFF
+    movw    r4, #0x3B78
+    movt    r4, #0x82F6              @ r4 = reflected CRC32C polynomial
+.Larm_crc_byte_loop:
     cmp     r1, #0
-    beq     .L_arm32_crc_done
-.L_arm32_crc_byte:
+    beq     .Larm_crc_done
     ldrb    r3, [r0], #1
     eor     r2, r2, r3
-    @ 8-bit unrolled branchless CRC32C
-    .rept 8
-    lsr     r4, r2, #1
-    and     r3, r2, #1
-    rsb     r3, r3, #0
-    and     r3, r3, r5
-    eor     r2, r4, r3
-    .endr
+    mov     r5, #8
+.Larm_crc_bit_loop:
+    tst     r2, #1
+    lsreq   r2, r2, #1
+    eorne   r2, r4, r2, lsr #1
+    subs    r5, r5, #1
+    bne     .Larm_crc_bit_loop
     subs    r1, r1, #1
-    bne     .L_arm32_crc_byte
-.L_arm32_crc_done:
-    mvn     r0, r2                    @ return ~crc
+    bne     .Larm_crc_byte_loop
+.Larm_crc_done:
+    mvn     r0, r2
     pop     {r4, r5, pc}
 .size vectra_pulse_crc32c, . - vectra_pulse_crc32c
 
-/*
- * vectra_pulse_cycle_read — ARM generic timer via MRRC
- * Returns 64-bit virtual count in r0:r1 (lo:hi)
- */
 .global vectra_pulse_cycle_read
 .type   vectra_pulse_cycle_read, %function
 vectra_pulse_cycle_read:
-    mrrc    p15, 1, r0, r1, c14      /* CNTVCT: r0=lo r1=hi */
+    mov     r0, #0
+    mov     r1, #0
     bx      lr
 .size vectra_pulse_cycle_read, . - vectra_pulse_cycle_read
 
 #endif /* __arm__ */
+
+.section .note.GNU-stack,"",%progbits
