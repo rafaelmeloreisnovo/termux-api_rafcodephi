@@ -170,6 +170,10 @@ public final class RafSensorBridgeAPI {
         }
     }
 
+    public static void returnTargetMissing(Context context, Intent originalIntent) {
+        returnTargetMissing(null, context, originalIntent);
+    }
+
     private static String nextRequestId() {
         long now = SystemClock.elapsedRealtimeNanos();
         int sequence = REQUEST_SEQUENCE.incrementAndGet();
