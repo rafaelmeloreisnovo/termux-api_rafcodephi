@@ -3,14 +3,13 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:sharedUserId="${TERMUX_PACKAGE_NAME}">
 
-
-
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.BODY_SENSORS" />
+    <uses-permission android:name="${RAFCODEPHI_APP_PACKAGE}.permission.RAF_SENSOR_ACCESS" />
     <uses-permission android:name="android.permission.CALL_PHONE"/>
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
@@ -39,14 +38,8 @@
     <uses-permission android:name="android.permission.DUMP" tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" tools:ignore="ProtectedPermissions" />
 
-    <!-- This permission is not used, but a permission is needed on the sharedfiles contentprovider,
-         which will always use FLAG_GRANT_READ_URI_PERMISSION. -->
     <permission android:name="${TERMUX_PACKAGE_NAME}.sharedfiles.READ_WRITE" android:protectionLevel="signature" />
 
-
-
-    <!-- Some of the used permissions imply uses-feature, so we need to make it optional.
-         See http://developer.android.com/guide/topics/manifest/uses-feature-element.html#permissions -->
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
     <uses-feature android:name="android.hardware.location" android:required="false" />
@@ -57,8 +50,6 @@
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
     <uses-feature android:name="android.hardware.wifi" android:required="false" />
     <uses-feature android:name="android.hardware.usb.host" android:required="false" />
-
-
 
     <application
         android:name=".TermuxAPIApplication"
@@ -123,10 +114,8 @@
                 <action android:name="android.nfc.action.TECH_DISCOVERED"/>
                 <category android:name="android.intent.category.DEFAULT"/>
             </intent-filter>
-
             <meta-data android:name="android.nfc.action.TECH_DISCOVERED"
                 android:resource="@xml/nfc_tech_filter" />
-
         </activity>
 
         <activity android:name=".apis.SAFAPI$SAFActivity"
@@ -139,16 +128,12 @@
             android:excludeFromRecents="true"
             android:exported="false" />
 
-        <!-- If you see "Unresolved package" errors for ReportActivity with manifest placeholder,
-             ignore it. Android Studio linter is broken and correct package name will be used at build time. -->
         <activity
             android:name="${TERMUX_PACKAGE_NAME}.shared.activities.ReportActivity"
             android:exported="false"
             android:documentLaunchMode="intoExisting"
             android:theme="@style/Theme.MarkdownViewActivity.DayNight"
             tools:ignore="MissingClass" />
-
-
 
         <provider
             android:name=".apis.ShareAPI$ContentProvider"
@@ -157,8 +142,6 @@
             android:grantUriPermissions="true"
             android:exported="true" />
 
-
-
         <receiver android:name=".TermuxApiReceiver"
             android:exported="false" />
 
@@ -166,9 +149,6 @@
             android:name="${TERMUX_PACKAGE_NAME}.shared.activities.ReportActivity$ReportActivityBroadcastReceiver"
             android:exported="false"
             tools:ignore="MissingClass" />
-
-
-
 
         <service
             android:name=".KeepAliveService"
@@ -192,7 +172,6 @@
             android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
             android:enabled="true"
             android:exported="true">
-
             <intent-filter>
                 <action android:name="android.service.notification.NotificationListenerService" />
             </intent-filter>
