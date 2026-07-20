@@ -24,7 +24,6 @@ jobs:
           exit_on_error() { echo "$1"; exit 1; }
 
           echo "Setting vars"
-          : > gradle-build.log
 
           if [ "$GITHUB_EVENT_NAME" == "pull_request" ]; then
               GITHUB_SHA="${{ github.event.pull_request.head.sha }}" # Do not use last merge commit set in GITHUB_SHA
@@ -51,8 +50,8 @@ jobs:
           echo "Building APK file for '$RELEASE_VERSION_NAME' release with '$APK_VERSION_TAG' tag"
           export TERMUX_API_APP__BUILD__APP_VERSION_NAME="${RELEASE_VERSION_NAME/v/}" # Used by app/build.gradle
           export TERMUX_API_APP__BUILD__APK_VERSION_TAG="$APK_VERSION_TAG" # Used by app/build.gradle
-          if ! ./gradlew assembleDebug --console=plain > gradle-build.log 2>&1; then
-            exit_on_error "Build failed for '$RELEASE_VERSION_NAME' release with '$APK_VERSION_TAG' tag. Full Gradle output uploaded as diagnostic artifact."
+          if ! ./gradlew assembleDebug; then
+            exit_on_error "Build failed for '$RELEASE_VERSION_NAME' release with '$APK_VERSION_TAG' tag."
           fi
 
           echo "Validating ABI APK files"
@@ -70,14 +69,6 @@ jobs:
             exit_on_error "Generate checksums-sha256.txt file failed for '$RELEASE_VERSION_NAME' release."
           fi
           echo "checksums-sha256.txt:"$'\n```\n'"$(cat "$APK_DIR_PATH/checksums-sha256.txt")"$'\n```'
-
-      - name: Upload diagnostic build log
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: raf-sensor-gradle-log-${{ github.run_id }}
-          path: gradle-build.log
-          if-no-files-found: warn
 
       - name: Upload files to action
         uses: actions/upload-artifact@v4

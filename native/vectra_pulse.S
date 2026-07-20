@@ -28,6 +28,7 @@
  * Sequence demonstrates toroidal traversal: gcd(PHI32, 2^32) = 1 ✓
  */
 .global attractor_table
+.hidden attractor_table  /* non-preemptible: permits direct PC-relative access in Android .so */
 .type   attractor_table, %object
 attractor_table:
     .word 0x00009E37  /* [ 0] C=0.617..  phi^1  */
