@@ -61,7 +61,7 @@ public final class RafSensorBridgeAPI {
             RafSensorBridgeContract.COMMAND_SNAPSHOT_ALL.equals(command);
 
         if (!catalog && !snapshotAll) {
-            returnError(context, originalIntent, "ERR_BRIDGE_COMMAND", "Unsupported RAFAELIA sensor bridge command");
+            returnError(receiver, context, originalIntent, "ERR_BRIDGE_COMMAND", "Unsupported RAFAELIA sensor bridge command");
             return;
         }
 
@@ -69,7 +69,10 @@ public final class RafSensorBridgeAPI {
         Intent callbackIntent = new Intent(context, TermuxApiReceiver.class);
         callbackIntent.setAction(context.getPackageName() + ".RAF_SENSOR_RESULT." + requestId);
         callbackIntent.putExtra("api_method", RafSensorBridgeContract.API_METHOD_RESULT);
-        callbackIntent.putExtra(RafSensorBridgeContract.EXTRA_ORIGINAL_INTENT, new Intent(originalIntent));
+
+        Intent originalForResult = new Intent();
+        ResultReturner.copyIntentExtras(originalIntent, originalForResult);
+        callbackIntent.putExtra(RafSensorBridgeContract.EXTRA_ORIGINAL_INTENT, originalForResult);
 
         int pendingFlags = PendingIntent.FLAG_CANCEL_CURRENT;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) pendingFlags |= PendingIntent.FLAG_MUTABLE;
@@ -114,7 +117,8 @@ public final class RafSensorBridgeAPI {
             if (RafSensorBridgeContract.API_METHOD_SENSOR.equals(apiMethod)) {
                 SensorAPI.onReceive(context, originalIntent);
             } else {
-                returnError(context, originalIntent, "ERR_BRIDGE_START", error.getClass().getSimpleName() + ": " + error.getMessage());
+                returnError(receiver, context, originalIntent, "ERR_BRIDGE_START",
+                    error.getClass().getSimpleName() + ": " + error.getMessage());
             }
         }
     }
@@ -149,19 +153,19 @@ public final class RafSensorBridgeAPI {
         }
 
         final String output = payload;
-        ResultReturner.returnData(context, original, out -> {
+        ResultReturner.returnData(receiver, original, out -> {
             out.append(output).append("\n");
             out.flush();
             out.close();
         });
     }
 
-    public static void returnTargetMissing(Context context, Intent originalIntent) {
+    public static void returnTargetMissing(BroadcastReceiver receiver, Context context, Intent originalIntent) {
         String apiMethod = originalIntent.getStringExtra("api_method");
         if (RafSensorBridgeContract.API_METHOD_SENSOR.equals(apiMethod)) {
             SensorAPI.onReceive(context, originalIntent);
         } else {
-            returnError(context, originalIntent, "ERR_TARGET_MISSING",
+            returnError(receiver, context, originalIntent, "ERR_TARGET_MISSING",
                 "RafaCodePhi app package is not installed: " + RafSensorBridgeContract.targetPackage());
         }
     }
@@ -172,9 +176,10 @@ public final class RafSensorBridgeAPI {
         return "raf-" + Long.toHexString(now) + "-" + Integer.toHexString(sequence);
     }
 
-    private static void returnError(Context context, Intent originalIntent, String code, String message) {
+    private static void returnError(BroadcastReceiver receiver, Context context, Intent originalIntent,
+                                    String code, String message) {
         final String payload = errorPayload(RafSensorBridgeContract.STATUS_FAILED, null, code, message);
-        ResultReturner.returnData(context, originalIntent, out -> {
+        ResultReturner.returnData(receiver, originalIntent, out -> {
             out.append(payload).append("\n");
             out.flush();
             out.close();
