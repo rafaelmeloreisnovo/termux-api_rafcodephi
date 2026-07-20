@@ -110,6 +110,15 @@ Only terminal callbacks are written to Termux stdout.
 
 After building and installing both APKs from the corresponding bridge branches, install the RafaCodePhi app first so Android knows the custom permission, then install Termux API.
 
+The first bridged command may open Android's permission dialog for the API-to-app permission. Sensors such as heart-rate or step-counter may additionally require permissions on the **RafaCodePhi app process itself**. Open its application settings directly from Termux:
+
+```sh
+am start -a android.settings.APPLICATION_DETAILS_SETTINGS \
+  -d package:com.termux.rafacodephi
+```
+
+Grant only the device permissions that are actually shown, such as **Physical activity** or **Body sensors**. A missing OEM permission or unavailable sensor remains explicit as `PERMISSION_REQUIRED` or another non-sampled state.
+
 Inventory:
 
 ```sh
