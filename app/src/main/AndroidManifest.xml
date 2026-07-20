@@ -3,12 +3,18 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:sharedUserId="${TERMUX_PACKAGE_NAME}">
 
+    <queries>
+        <package android:name="${RAFCODEPHI_APP_PACKAGE}" />
+    </queries>
+
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.BODY_SENSORS" />
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
+    <uses-permission android:name="android.permission.HIGH_SAMPLING_RATE_SENSORS" />
     <uses-permission android:name="${RAFCODEPHI_APP_PACKAGE}.permission.RAF_SENSOR_ACCESS" />
     <uses-permission android:name="android.permission.CALL_PHONE"/>
     <uses-permission android:name="android.permission.CAMERA" />
