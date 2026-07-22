@@ -265,6 +265,10 @@ public class SocketListener {
                     Logger.logStackTraceWithMessage(LOG_TAG, "Error listening for connections", e);
                 }
             });
+            /* prime native state machine: 42 steps = one full attractor cycle */
+            VectraPulse.nativeBurst(PULSE_STATE, 42);
+            long cycle = VectraPulse.nativeCycleRead();
+            Logger.logDebug(LOG_TAG, "VectraPulse init cycle=0x" + Long.toHexString(cycle));
             listener.start();
         }
     }
