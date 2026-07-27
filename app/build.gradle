@@ -112,6 +112,7 @@ dependencies {
     //implementation "com.termux:termux-shared:0.118.0"
 
     implementation "com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava"
+    testImplementation "junit:junit:4.13.2"
 }
 
 task versionName {
