@@ -37,8 +37,44 @@ Fonte: `TermuxApiReceiver.java` (switch de `api_method`).
 
 ## Sensores
 - Sensor
+- RafSensor
 - InfraredFrequencies
 - InfraredTransmit
+
+### Análise espectral RAFAELIA
+
+A análise espectral usa o método `Sensor` ou `RafSensor` com a ação `spectrum`. Ela coleta uma janela limitada no aplicativo `com.termux.rafacodephi`, calcula um periodograma local e retorna JSON.
+
+Parâmetros:
+
+| Extra | Padrão | Limite |
+|---|---:|---:|
+| `sensor_name` | obrigatório | acelerometer, gyroscope, magnetometer, light, proximity, pressure, gravity ou rotation_vector |
+| `spectral_axis` | `magnitude` | magnitude, x, y, z ou w |
+| `sample_count` | 128 | 16–512 |
+| `sampling_period_us` | 20000 | 5000–200000 |
+| `raf_timeout_ms` | 5000 | 1000–30000 |
+| `window` | `hann` | hann ou rectangular |
+
+Saída principal:
+
+- frequência dominante;
+- centroide espectral;
+- RMS após remoção da média;
+- resolução em frequência;
+- taxa de amostragem efetiva;
+- jitter temporal;
+- bins de frequência e potência;
+- `quality_state`;
+- `claim_allowed=false`.
+
+Estados de cautela:
+
+- `TOKEN_VAZIO_FLAT_SIGNAL`: não há potência não-DC suficiente;
+- `TOKEN_VAZIO_TIMING_JITTER`: a irregularidade temporal excede a régua do analisador;
+- `EVIDENCIADO_COMPUTACIONAL`: cálculo completado dentro dos limites sintáticos e temporais, sem alegação causal ou física.
+
+A operação não ativa microfone, não persiste amostras brutas e não executa em agenda automática.
 
 ## Rede
 - WifiConnectionInfo
