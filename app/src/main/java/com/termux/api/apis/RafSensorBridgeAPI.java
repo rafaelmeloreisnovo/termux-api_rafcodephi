@@ -34,6 +34,7 @@ public final class RafSensorBridgeAPI {
 
         String command = intent.getAction();
         if (RafSensorBridgeContract.COMMAND_LIST.equals(command)) return true;
+        if (RafSensorBridgeContract.COMMAND_SPECTRUM.equals(command)) return true;
         if (!RafSensorBridgeContract.COMMAND_SENSORS.equals(command)) return false;
         boolean all = intent.getBooleanExtra("all", false);
         int limit = intent.getIntExtra("limit", Integer.MAX_VALUE);
@@ -59,10 +60,52 @@ public final class RafSensorBridgeAPI {
             RafSensorBridgeContract.COMMAND_CATALOG.equals(command);
         boolean snapshotAll = RafSensorBridgeContract.COMMAND_SENSORS.equals(command) ||
             RafSensorBridgeContract.COMMAND_SNAPSHOT_ALL.equals(command);
+        boolean spectrum = RafSensorBridgeContract.COMMAND_SPECTRUM.equals(command);
 
-        if (!catalog && !snapshotAll) {
-            returnError(receiver, context, originalIntent, "ERR_BRIDGE_COMMAND", "Unsupported RAFAELIA sensor bridge command");
+        if (!catalog && !snapshotAll && !spectrum) {
+            returnError(receiver, context, originalIntent, "ERR_BRIDGE_COMMAND",
+                "Unsupported RAFAELIA sensor bridge command");
             return;
+        }
+
+        String spectralSensorName = originalIntent.getStringExtra(RafSensorBridgeContract.EXTRA_SENSOR_NAME);
+        String spectralAxis = originalIntent.getStringExtra(RafSensorBridgeContract.EXTRA_SPECTRAL_AXIS);
+        if (spectralAxis == null) spectralAxis = "magnitude";
+        int spectralSampleCount = originalIntent.getIntExtra(
+            RafSensorBridgeContract.EXTRA_SAMPLE_COUNT,
+            RafSensorBridgeContract.DEFAULT_SPECTRAL_SAMPLE_COUNT
+        );
+        int spectralSamplingPeriodUs = originalIntent.getIntExtra(
+            RafSensorBridgeContract.EXTRA_SAMPLING_PERIOD_US,
+            RafSensorBridgeContract.DEFAULT_SAMPLING_PERIOD_US
+        );
+        int suppliedTimeoutMs = originalIntent.getIntExtra(
+            RafSensorBridgeContract.EXTRA_BRIDGE_TIMEOUT_MS,
+            originalIntent.getIntExtra(
+                RafSensorBridgeContract.EXTRA_TIMEOUT_MS,
+                RafSensorBridgeContract.DEFAULT_TIMEOUT_MS
+            )
+        );
+        int timeoutMs = spectrum
+            ? RafSensorBridgeContract.normalizeSpectralTimeoutMs(suppliedTimeoutMs)
+            : RafSensorBridgeContract.normalizeTimeoutMs(suppliedTimeoutMs);
+        String spectralWindow = originalIntent.getStringExtra(RafSensorBridgeContract.EXTRA_WINDOW);
+        if (spectralWindow == null) spectralWindow = "hann";
+
+        if (spectrum) {
+            RafSensorBridgeContract.ValidationResult validation =
+                RafSensorBridgeContract.validateSpectrumArguments(
+                    spectralSensorName,
+                    spectralAxis,
+                    spectralSampleCount,
+                    spectralSamplingPeriodUs,
+                    timeoutMs,
+                    spectralWindow
+                );
+            if (!validation.valid) {
+                returnError(receiver, context, originalIntent, validation.errorCode, validation.message);
+                return;
+            }
         }
 
         String requestId = nextRequestId();
@@ -86,24 +129,34 @@ public final class RafSensorBridgeAPI {
         Intent serviceIntent = new Intent();
         serviceIntent.setComponent(new ComponentName(
             RafSensorBridgeContract.targetPackage(),
-            RafSensorBridgeContract.targetServiceClass()
+            spectrum
+                ? RafSensorBridgeContract.targetSpectralServiceClass()
+                : RafSensorBridgeContract.targetServiceClass()
         ));
-        serviceIntent.setAction(catalog
-            ? RafSensorBridgeContract.actionCatalog()
-            : RafSensorBridgeContract.actionSnapshotAll());
-        serviceIntent.putExtra(RafSensorBridgeContract.EXTRA_PROTOCOL_VERSION, RafSensorBridgeContract.PROTOCOL_VERSION);
-        serviceIntent.putExtra(RafSensorBridgeContract.EXTRA_REQUEST_ID, requestId);
-        serviceIntent.putExtra(
-            RafSensorBridgeContract.EXTRA_TIMEOUT_MS,
-            RafSensorBridgeContract.normalizeTimeoutMs(
-                originalIntent.getIntExtra(
-                    RafSensorBridgeContract.EXTRA_BRIDGE_TIMEOUT_MS,
-                    RafSensorBridgeContract.DEFAULT_TIMEOUT_MS
-                )
-            )
+        serviceIntent.setAction(
+            spectrum
+                ? RafSensorBridgeContract.actionSpectrum()
+                : catalog
+                    ? RafSensorBridgeContract.actionCatalog()
+                    : RafSensorBridgeContract.actionSnapshotAll()
         );
+        serviceIntent.putExtra(
+            RafSensorBridgeContract.EXTRA_PROTOCOL_VERSION,
+            spectrum
+                ? RafSensorBridgeContract.SPECTRAL_PROTOCOL_VERSION
+                : RafSensorBridgeContract.PROTOCOL_VERSION
+        );
+        serviceIntent.putExtra(RafSensorBridgeContract.EXTRA_REQUEST_ID, requestId);
+        serviceIntent.putExtra(RafSensorBridgeContract.EXTRA_TIMEOUT_MS, timeoutMs);
         serviceIntent.putExtra(RafSensorBridgeContract.EXTRA_CALLBACK, callback);
         serviceIntent.putExtra(RafSensorBridgeContract.EXTRA_CLIENT_PACKAGE, context.getPackageName());
+        if (spectrum) {
+            serviceIntent.putExtra(RafSensorBridgeContract.EXTRA_SENSOR_NAME, spectralSensorName);
+            serviceIntent.putExtra(RafSensorBridgeContract.EXTRA_SPECTRAL_AXIS, spectralAxis);
+            serviceIntent.putExtra(RafSensorBridgeContract.EXTRA_SAMPLE_COUNT, spectralSampleCount);
+            serviceIntent.putExtra(RafSensorBridgeContract.EXTRA_SAMPLING_PERIOD_US, spectralSamplingPeriodUs);
+            serviceIntent.putExtra(RafSensorBridgeContract.EXTRA_WINDOW, spectralWindow);
+        }
 
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -112,9 +165,9 @@ public final class RafSensorBridgeAPI {
                 context.startService(serviceIntent);
             }
         } catch (Throwable error) {
-            Logger.logStackTraceWithMessage(LOG_TAG, "Could not start RAFAELIA app sensor runtime", error);
+            Logger.logStackTraceWithMessage(LOG_TAG, "Could not start RAFAELIA sensor runtime", error);
             String apiMethod = originalIntent.getStringExtra("api_method");
-            if (RafSensorBridgeContract.API_METHOD_SENSOR.equals(apiMethod)) {
+            if (!spectrum && RafSensorBridgeContract.API_METHOD_SENSOR.equals(apiMethod)) {
                 SensorAPI.onReceive(context, originalIntent);
             } else {
                 returnError(receiver, context, originalIntent, "ERR_BRIDGE_START",
@@ -138,7 +191,10 @@ public final class RafSensorBridgeAPI {
 
         String payload = null;
         if (RafSensorBridgeContract.STATUS_COMPLETED.equals(status)) {
-            payload = callbackIntent.getStringExtra(RafSensorBridgeContract.RESULT_SENSOR_CATALOG_JSON);
+            payload = callbackIntent.getStringExtra(RafSensorBridgeContract.RESULT_SPECTRUM_JSON);
+            if (payload == null) {
+                payload = callbackIntent.getStringExtra(RafSensorBridgeContract.RESULT_SENSOR_CATALOG_JSON);
+            }
             if (payload == null) {
                 payload = callbackIntent.getStringExtra(RafSensorBridgeContract.RESULT_SENSOR_BATCH_JSON);
             }
@@ -162,7 +218,8 @@ public final class RafSensorBridgeAPI {
 
     public static void returnTargetMissing(BroadcastReceiver receiver, Context context, Intent originalIntent) {
         String apiMethod = originalIntent.getStringExtra("api_method");
-        if (RafSensorBridgeContract.API_METHOD_SENSOR.equals(apiMethod)) {
+        boolean spectrum = RafSensorBridgeContract.COMMAND_SPECTRUM.equals(originalIntent.getAction());
+        if (!spectrum && RafSensorBridgeContract.API_METHOD_SENSOR.equals(apiMethod)) {
             SensorAPI.onReceive(context, originalIntent);
         } else {
             returnError(receiver, context, originalIntent, "ERR_TARGET_MISSING",
