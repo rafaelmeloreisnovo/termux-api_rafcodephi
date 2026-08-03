@@ -1,5 +1,9 @@
 # Termux API
 
+**Estado:** `ACTIVE`  
+**Proprietário lógico:** `app-maintainer`  
+**Repositório:** [`rafaelmeloreisnovo/termux-api_rafcodephi`](https://github.com/rafaelmeloreisnovo/termux-api_rafcodephi)
+
 [![Build status](https://github.com/termux/termux-api/workflows/Build/badge.svg)](https://github.com/termux/termux-api/actions)
 [![Join the chat at https://gitter.im/termux/termux](https://badges.gitter.im/termux/termux.svg)](https://gitter.im/termux/termux)
 
