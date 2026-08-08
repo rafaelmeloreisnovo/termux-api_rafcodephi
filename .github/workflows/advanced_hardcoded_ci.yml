@@ -37,12 +37,12 @@ jobs:
         with:
           repository: rafaelmeloreisnovo/termux-app-rafacodephi
           ref: 823cae36ca9b10970fee41750fb20dc4dcbadb73
-          path: .rafcodephi-termux-app
+          path: rafcodephi-termux-app-src
           token: ${{ github.token }}
           persist-credentials: false
 
       - name: Publish exact termux-shared to Maven Local
-        working-directory: .rafcodephi-termux-app
+        working-directory: rafcodephi-termux-app-src
         run: ./gradlew publishReleasePublicationToMavenLocal --no-daemon
 
       - name: Build debug and release (official behavior preserved)

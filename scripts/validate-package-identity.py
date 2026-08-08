@@ -106,6 +106,11 @@ def validate(root: Path) -> dict[str, object]:
             "publishReleasePublicationToMavenLocal" in workflow,
             f"CI_SHARED_PUBLICATION_MISSING:{workflow_path}",
         )
+        require(
+            "path: rafcodephi-termux-app-src" in workflow
+            and "working-directory: rafcodephi-termux-app-src" in workflow,
+            f"CI_SHARED_WORKDIR_UNSAFE:{workflow_path}",
+        )
     require(
         "TERMUX_API_CODE_PACKAGE_NAME" in constants and "TERMUX_PACKAGE_NAME" in constants,
         "TERMUX_SHARED_CONSTANTS_NOT_CONSUMED",
