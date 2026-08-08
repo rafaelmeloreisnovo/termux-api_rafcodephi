@@ -1,4 +1,4 @@
-#!/data/data/com.termux/files/usr/bin/bash
+#!/data/data/com.termux.rafacodephi/files/usr/bin/bash
 # ╔══════════════════════════════════════════════════════════════════╗
 # ║   fix_rafgittools.sh — Reparos RafGitTools via cat              ║
 # ║   Autor : ΔRafaelVerboΩ / CIENTIESPIRITUAL                      ║

@@ -1,15 +1,31 @@
 apply plugin: 'com.android.application'
 
+def rafcodephiAppPackage = System.getenv("RAFCODEPHI_APP_PACKAGE_NAME") ?: "com.termux.rafacodephi"
+def rafcodephiApiPackage = System.getenv("RAFCODEPHI_API_PACKAGE_NAME") ?: "${rafcodephiAppPackage}.api"
+if (rafcodephiAppPackage != "com.termux.rafacodephi" || rafcodephiApiPackage != "com.termux.rafacodephi.api") {
+    throw new GradleException("RAFCODEPHI app/API package identities are canonical and cannot be overridden.")
+}
+def rafcodephiSharedVersion = System.getenv("RAFCODEPHI_TERMUX_SHARED_VERSION") ?: "141991ee5034cc15c754816b729363361df546b3"
+def rafcodephiSharedMode = System.getenv("RAFCODEPHI_TERMUX_SHARED_MODE") ?: "jitpack"
+def pairedKeystoreFile = System.getenv("RAFCODEPHI_PAIRED_KEYSTORE_FILE") ?: ""
+def pairedKeystorePassword = System.getenv("RAFCODEPHI_PAIRED_KEYSTORE_PASSWORD") ?: ""
+def pairedKeyAlias = System.getenv("RAFCODEPHI_PAIRED_KEY_ALIAS") ?: ""
+def pairedKeyPassword = System.getenv("RAFCODEPHI_PAIRED_KEY_PASSWORD") ?: ""
+def pairedSigningValues = [pairedKeystoreFile, pairedKeystorePassword, pairedKeyAlias, pairedKeyPassword]
+def hasAnyPairedSigningMaterial = pairedSigningValues.any { !it.isEmpty() }
+def hasPairedSigningMaterial = pairedSigningValues.every { !it.isEmpty() }
+if (hasAnyPairedSigningMaterial && !hasPairedSigningMaterial) {
+    throw new GradleException("RAFCODEPHI paired signing requires all RAFCODEPHI_PAIRED_* variables.")
+}
+
 android {
     namespace "com.termux.api"
 
     compileSdk project.properties.compileSdkVersion.toInteger()
     def appVersionName = System.getenv("TERMUX_API_APP__BUILD__APP_VERSION_NAME") ?: ""
     def apkVersionTag = System.getenv("TERMUX_API_APP__BUILD__APK_VERSION_TAG") ?: ""
-    def rafcodephiAppPackage = System.getenv("RAFCODEPHI_APP_PACKAGE_NAME") ?: "com.termux.rafacodephi"
-
     defaultConfig {
-        applicationId "com.termux.api"
+        applicationId rafcodephiApiPackage
         minSdk project.properties.minSdkVersion.toInteger()
         targetSdk project.properties.targetSdkVersion.toInteger()
         versionCode 1002
@@ -18,11 +34,12 @@ android {
         if (appVersionName) versionName = appVersionName
         validateVersionName(versionName)
 
-        manifestPlaceholders.TERMUX_PACKAGE_NAME = "com.termux"
         manifestPlaceholders.TERMUX_APP_NAME = "Termux"
         manifestPlaceholders.TERMUX_API_APP_NAME = "Termux:API"
         manifestPlaceholders.RAFCODEPHI_APP_PACKAGE = rafcodephiAppPackage
+        manifestPlaceholders.RAFCODEPHI_API_PACKAGE = rafcodephiApiPackage
         buildConfigField "String", "RAFCODEPHI_APP_PACKAGE", "\"${rafcodephiAppPackage}\""
+        buildConfigField "String", "RAFCODEPHI_API_PACKAGE", "\"${rafcodephiApiPackage}\""
 
         externalNativeBuild {
             cmake {
@@ -46,6 +63,14 @@ android {
             storePassword 'xrj45yWGLbsO7W0v'
             keyPassword 'xrj45yWGLbsO7W0v'
         }
+        if (hasPairedSigningMaterial) {
+            paired {
+                storeFile file(pairedKeystoreFile)
+                storePassword pairedKeystorePassword
+                keyAlias pairedKeyAlias
+                keyPassword pairedKeyPassword
+            }
+        }
     }
 
     buildTypes {
@@ -53,10 +78,11 @@ android {
             minifyEnabled true
             shrinkResources false // Reproducible builds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
+            if (hasPairedSigningMaterial) signingConfig signingConfigs.paired
         }
 
         debug {
-            signingConfig signingConfigs.debug
+            signingConfig hasPairedSigningMaterial ? signingConfigs.paired : signingConfigs.debug
         }
     }
 
@@ -105,7 +131,16 @@ dependencies {
     implementation "androidx.media:media:1.7.0"
     implementation "androidx.preference:preference:1.2.1"
 
-    implementation "com.termux.termux-app:termux-shared:8aca6dbbf4"
+    // The API plugin must compile against the same forked TermuxConstants as the
+    // main app. Upstream termux-shared resolves com.termux/com.termux.api and is
+    // therefore incompatible with the RAFCODEPHI package and signature-permission route.
+    if (rafcodephiSharedMode == "maven-local") {
+        implementation "com.termux:termux-shared:0.118.0"
+    } else if (rafcodephiSharedMode == "jitpack") {
+        implementation "com.github.rafaelmeloreisnovo.termux-app-rafacodephi:termux-shared:${rafcodephiSharedVersion}"
+    } else {
+        throw new GradleException("Unsupported RAFCODEPHI_TERMUX_SHARED_MODE='${rafcodephiSharedMode}'")
+    }
     // Use if below libraries are published locally by termux-app with `./gradlew publishReleasePublicationToMavenLocal` and used with `mavenLocal()`.
     // If updates are done, republish there and sync project with gradle files here
     // https://github.com/termux/termux-app/wiki/Termux-Libraries

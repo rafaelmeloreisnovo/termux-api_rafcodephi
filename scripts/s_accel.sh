@@ -1,4 +1,4 @@
-#!/data/data/com.termux/files/usr/bin/bash
+#!/data/data/com.termux.rafacodephi/files/usr/bin/bash
 PA="$HOME/PEDRA_ANGULAR"
 N="${1:-5}"
 OUT="$PA/sensors/raw/accel_$(date +%Y%m%d_%H%M%S).json"

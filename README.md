@@ -7,17 +7,25 @@
 [![Build status](https://github.com/termux/termux-api/workflows/Build/badge.svg)](https://github.com/termux/termux-api/actions)
 [![Join the chat at https://gitter.im/termux/termux](https://badges.gitter.im/termux/termux.svg)](https://gitter.im/termux/termux)
 
-This is an app exposing Android API to command line usage and scripts or programs.
+This fork exposes Android APIs to command-line programs running in
+`com.termux.rafacodephi`.
+
+The paired identities are fixed by contract:
+
+- main app: `com.termux.rafacodephi`
+- API plugin: `com.termux.rafacodephi.api`
+- runtime prefix: `/data/data/com.termux.rafacodephi/files/usr`
 
 When developing or packaging, note that this app needs to be signed with the same
-key as the main Termux app for permissions to work (only the main Termux app are
-allowed to call the API methods in this app).
+key as the main Termux app. The receiver is exported only through the main app's
+signature-level `com.termux.rafacodephi.permission.TERMUX_API` permission.
 
 ## Installation
 
 Latest version is `v0.53.0`.
 
-Termux:API application can be obtained from [F-Droid](https://f-droid.org/en/packages/com.termux.api/).
+Do not install the upstream `com.termux.api` APK with this fork. A usable pair
+must be built from the RAFCODEPHI app/API sources and signed with the same key.
 
 Additionally we provide per-commit **debug validation builds** for those who want to try
 out the latest features or test their pull request. These artifacts come from
@@ -39,13 +47,13 @@ Use the correct build path depending on your goal:
   - Purpose: local verification, CI checks, pull request validation.
   - CI workflow: [`github_action_build.yml`](.github/workflows/github_action_build.yml) (builds and uploads debug APK artifacts).
   - Output: per-ABI debug APK artifacts (`armeabi-v7a`, `arm64-v8a`) from `app/build/outputs/apk/debug`.
-  - Important: published debug APK from workflow artifacts is **not** a substitute for the official release APK, especially for production permissions/use-cases.
+  - Important: a standalone debug APK has no paired-signature proof and is **not** evidence for the signature-permission runtime.
 
 - **Official distribution build (signed release):**
   - Command: `./gradlew assembleRelease`
   - Purpose: official distributable release artifacts only.
   - CI workflow: [`github_release_build.yml`](.github/workflows/github_release_build.yml) (builds per-ABI release APKs, checksums, uploads to GitHub Release).
-  - Requirement: release signing credentials must be provided securely via CI secrets. Do not commit keys, keystore files, or plaintext credentials to the repository.
+  - Requirement: the same signing credentials used by `termux-app-rafacodephi` must be provided through the `RAFCODEPHI_PAIRED_*` environment interface. Do not commit production keys or plaintext credentials.
   - Rule: official release must be produced only from the `assembleRelease` path with secure signing configured in CI.
 
 
@@ -92,7 +100,10 @@ sockets, and passes their address to the [TermuxApiReceiver broadcast receiver](
 as in:
 
 ```
-/system/bin/am broadcast ${BROADCAST_RECEIVER} --es socket_input ${INPUT_SOCKET} --es socket_output ${OUTPUT_SOCKET}
+/system/bin/am broadcast --user 0 \
+  -n com.termux.rafacodephi.api/com.termux.api.TermuxApiReceiver \
+  --es socket_input ${INPUT_SOCKET} \
+  --es socket_output ${OUTPUT_SOCKET}
 ```
 
 The two sockets are used to forward stdin from `termux-api` to the relevant API

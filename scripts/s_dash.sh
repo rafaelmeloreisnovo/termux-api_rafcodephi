@@ -1,4 +1,4 @@
-#!/data/data/com.termux/files/usr/bin/bash
+#!/data/data/com.termux.rafacodephi/files/usr/bin/bash
 # Ctrl+C para sair
 PA="$HOME/PEDRA_ANGULAR"
 while true; do

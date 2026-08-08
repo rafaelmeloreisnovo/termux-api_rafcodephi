@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PKG="com.termux.api"
+PKG="${RAFCODEPHI_API_PACKAGE_NAME:-com.termux.rafacodephi.api}"
 
 need() {
   command -v "$1" >/dev/null 2>&1 || { echo "Erro: comando '$1' não encontrado"; exit 1; }

@@ -20,13 +20,13 @@ adb devices
 2. Garanta que o app existe no device:
 
 ```bash
-adb shell pm list packages | grep com.termux.api
+adb shell pm list packages | grep com.termux.rafacodephi.api
 ```
 
 3. Ative wait-for-debugger para o processo do app:
 
 ```bash
-adb shell am set-debug-app -w com.termux.api
+adb shell am set-debug-app -w com.termux.rafacodephi.api
 ```
 
 4. Abra o app e conecte debugger via Android Studio.
