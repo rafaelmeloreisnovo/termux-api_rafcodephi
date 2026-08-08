@@ -19,6 +19,7 @@ jobs:
       APK_RELEASE_DIR: app/build/outputs/apk/release
       TERMUX_API_APP__BUILD__APP_VERSION_NAME: ${{ github.event.inputs.app_version_name }}
       TERMUX_API_APP__BUILD__APK_VERSION_TAG: beta-${{ github.run_number }}
+      RAFCODEPHI_TERMUX_SHARED_MODE: maven-local
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -29,6 +30,22 @@ jobs:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
           cache: gradle
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Checkout locked RAFCODEPHI termux-shared source
+        uses: actions/checkout@v4
+        with:
+          repository: rafaelmeloreisnovo/termux-app-rafacodephi
+          ref: 823cae36ca9b10970fee41750fb20dc4dcbadb73
+          path: .rafcodephi-termux-app
+          token: ${{ github.token }}
+          persist-credentials: false
+
+      - name: Publish exact termux-shared to Maven Local
+        working-directory: .rafcodephi-termux-app
+        run: ./gradlew publishReleasePublicationToMavenLocal --no-daemon
 
       - name: Build debug and release APK splits
         shell: bash
