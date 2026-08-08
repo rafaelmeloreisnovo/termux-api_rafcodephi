@@ -35,6 +35,7 @@ def require(condition: bool, token: str) -> None:
 
 def validate(root: Path) -> dict[str, object]:
     gradle = read(root, "app/build.gradle")
+    proguard = read(root, "app/proguard-rules.pro")
     manifest = read(root, "app/src/main/AndroidManifest.xml")
     strings = read(root, "app/src/main/res/values/strings.xml")
     constants = read(root, "app/src/main/java/com/termux/api/TermuxAPIConstants.java")
@@ -121,6 +122,10 @@ def validate(root: Path) -> dict[str, object]:
     require(
         'coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:2.1.2"' in gradle,
         "TERMUX_SHARED_DESUGARING_VERSION_MISMATCH",
+    )
+    require(
+        "-dontwarn com.google.j2objc.annotations.RetainedWith" in proguard,
+        "TERMUX_SHARED_GUAVA_R8_ANNOTATION_RULE_MISSING",
     )
 
     return {

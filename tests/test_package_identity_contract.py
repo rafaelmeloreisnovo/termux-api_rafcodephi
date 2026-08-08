@@ -37,6 +37,7 @@ def test_numeric_base_helper_uses_the_native_socket_client() -> None:
 def test_upstream_shared_library_regression_fails_closed(tmp_path: Path) -> None:
     for relative in [
         "app/build.gradle",
+        "app/proguard-rules.pro",
         "app/src/main/AndroidManifest.xml",
         "app/src/main/res/values/strings.xml",
         "app/src/main/java/com/termux/api/TermuxAPIConstants.java",
