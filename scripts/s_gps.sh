@@ -1,4 +1,4 @@
-#!/data/data/com.termux/files/usr/bin/bash
+#!/data/data/com.termux.rafacodephi/files/usr/bin/bash
 PA="$HOME/PEDRA_ANGULAR"
 OUT="$PA/sensors/raw/gps_$(date +%Y%m%d_%H%M%S).json"
 echo "Capturando GPS (timeout 30s)..."

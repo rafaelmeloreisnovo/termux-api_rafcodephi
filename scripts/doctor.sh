@@ -29,9 +29,9 @@ fi
 [[ -f app/build.gradle ]] && ok "app/build.gradle encontrado" || err "app/build.gradle ausente"
 [[ -f app/src/main/AndroidManifest.xml ]] && ok "AndroidManifest.xml encontrado" || err "AndroidManifest.xml ausente"
 
-grep -Eq 'manifestPlaceholders\.TERMUX_PACKAGE_NAME\s*=\s*"com\.termux"' app/build.gradle \
-  && ok "TERMUX_PACKAGE_NAME aponta para com.termux" \
-  || err "TERMUX_PACKAGE_NAME não aponta para com.termux"
+python3 scripts/validate-package-identity.py \
+  && ok "Identidade RAFCODEPHI app/API/termux-shared coerente" \
+  || err "Contrato de identidade RAFCODEPHI inválido"
 
 grep -Eq 'include\s+"armeabi-v7a",\s*"arm64-v8a"' app/build.gradle \
   && ok "ABI splits incluem armeabi-v7a e arm64-v8a" \

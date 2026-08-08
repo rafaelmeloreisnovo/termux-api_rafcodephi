@@ -1,4 +1,4 @@
-#!/data/data/com.termux/files/usr/bin/bash
+#!/data/data/com.termux.rafacodephi/files/usr/bin/bash
 # uso: s_generic.sh "nome_sensor" [n_amostras]
 SENSOR="${1:-light}"
 N="${2:-3}"

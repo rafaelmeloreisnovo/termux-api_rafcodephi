@@ -1,4 +1,4 @@
-#!/data/data/com.termux/files/usr/bin/bash
+#!/data/data/com.termux.rafacodephi/files/usr/bin/bash
 # ╔══════════════════════════════════════════════════════════════════╗
 # ║          PEDRA_ANGULAR — api.sh  (autoextract + docs)           ║
 # ║  Autor : ΔRafaelVerboΩ / CIENTIESPIRITUAL                       ║
@@ -19,7 +19,7 @@
 #
 # PARA CODEX / ASSISTENTES IA — leia antes de modificar qualquer arquivo:
 #   Este projeto usa termux-api (fork rafcodephi) como backend de sensores.
-#   O pacote instalado é com.termux.rafacodephi (NÃO com.termux.api).
+#   App principal: com.termux.rafacodephi; plugin API: com.termux.rafacodephi.api.
 #   Toda saída de sensor vai para $PA/sensors/raw/*.json
 #   Estado global do sistema: $PA/state/global.json  (vetor 7D)
 #   Flags de compilação ARM32: $PA/flags/{c,asm,rs}/arm32.txt
@@ -27,7 +27,7 @@
 #
 # DETECÇÃO DE BUILD TARGET
 PA_PKG_OFFICIAL="com.termux.api"
-PA_PKG_RAFA="com.termux.rafacodephi"
+PA_PKG_RAFA="com.termux.rafacodephi.api"
 PA_TERMUX_OFFICIAL="/data/data/com.termux/files/usr/bin/bash"
 PA_TERMUX_RAFA="/data/data/com.termux.rafacodephi/files/usr/bin/bash"
 
@@ -133,7 +133,7 @@ _gen_sensor_scripts() {
 
   # s_battery.sh
   cat > "$PA/scripts/s_battery.sh" << 'EOF'
-#!/data/data/com.termux/files/usr/bin/bash
+#!/data/data/com.termux.rafacodephi/files/usr/bin/bash
 PA="$HOME/PEDRA_ANGULAR"
 OUT="$PA/sensors/raw/battery_$(date +%Y%m%d_%H%M%S).json"
 termux-battery-status > "$OUT" 2>&1
@@ -151,7 +151,7 @@ EOF
 
   # s_accel.sh
   cat > "$PA/scripts/s_accel.sh" << 'EOF'
-#!/data/data/com.termux/files/usr/bin/bash
+#!/data/data/com.termux.rafacodephi/files/usr/bin/bash
 PA="$HOME/PEDRA_ANGULAR"
 N="${1:-1}"
 OUT="$PA/sensors/raw/accel_$(date +%Y%m%d_%H%M%S).json"
@@ -169,7 +169,7 @@ EOF
 
   # s_gyro.sh
   cat > "$PA/scripts/s_gyro.sh" << 'EOF'
-#!/data/data/com.termux/files/usr/bin/bash
+#!/data/data/com.termux.rafacodephi/files/usr/bin/bash
 PA="$HOME/PEDRA_ANGULAR"
 N="${1:-1}"
 OUT="$PA/sensors/raw/gyro_$(date +%Y%m%d_%H%M%S).json"
@@ -187,7 +187,7 @@ EOF
 
   # s_light.sh
   cat > "$PA/scripts/s_light.sh" << 'EOF'
-#!/data/data/com.termux/files/usr/bin/bash
+#!/data/data/com.termux.rafacodephi/files/usr/bin/bash
 PA="$HOME/PEDRA_ANGULAR"
 N="${1:-1}"
 OUT="$PA/sensors/raw/light_$(date +%Y%m%d_%H%M%S).json"
@@ -203,7 +203,7 @@ EOF
 
   # s_gps.sh
   cat > "$PA/scripts/s_gps.sh" << 'EOF'
-#!/data/data/com.termux/files/usr/bin/bash
+#!/data/data/com.termux.rafacodephi/files/usr/bin/bash
 PA="$HOME/PEDRA_ANGULAR"
 OUT="$PA/sensors/raw/gps_$(date +%Y%m%d_%H%M%S).json"
 echo "Capturando GPS (timeout 30s)..."
@@ -220,7 +220,7 @@ EOF
 
   # s_wifi.sh
   cat > "$PA/scripts/s_wifi.sh" << 'EOF'
-#!/data/data/com.termux/files/usr/bin/bash
+#!/data/data/com.termux.rafacodephi/files/usr/bin/bash
 PA="$HOME/PEDRA_ANGULAR"
 OUT="$PA/sensors/raw/wifi_$(date +%Y%m%d_%H%M%S).json"
 termux-wifi-connectioninfo > "$OUT" 2>&1
@@ -236,7 +236,7 @@ EOF
 
   # s_mic.sh
   cat > "$PA/scripts/s_mic.sh" << 'EOF'
-#!/data/data/com.termux/files/usr/bin/bash
+#!/data/data/com.termux.rafacodephi/files/usr/bin/bash
 PA="$HOME/PEDRA_ANGULAR"
 SECS="${1:-3}"
 OUT="$PA/sensors/raw/mic_$(date +%Y%m%d_%H%M%S).wav"
@@ -247,7 +247,7 @@ EOF
 
   # s_list.sh
   cat > "$PA/scripts/s_list.sh" << 'EOF'
-#!/data/data/com.termux/files/usr/bin/bash
+#!/data/data/com.termux.rafacodephi/files/usr/bin/bash
 PA="$HOME/PEDRA_ANGULAR"
 OUT="$PA/sensors/sensor_list.txt"
 termux-sensor -l > "$OUT" 2>&1
@@ -257,7 +257,7 @@ EOF
 
   # s_generic.sh
   cat > "$PA/scripts/s_generic.sh" << 'EOF'
-#!/data/data/com.termux/files/usr/bin/bash
+#!/data/data/com.termux.rafacodephi/files/usr/bin/bash
 PA="$HOME/PEDRA_ANGULAR"
 SENSOR="${1:-TYPE_ACCELEROMETER}"
 N="${2:-1}"
@@ -269,7 +269,7 @@ EOF
 
   # s_dash.sh
   cat > "$PA/scripts/s_dash.sh" << 'EOF'
-#!/data/data/com.termux/files/usr/bin/bash
+#!/data/data/com.termux.rafacodephi/files/usr/bin/bash
 PA="$HOME/PEDRA_ANGULAR"
 while true; do
   clear
@@ -579,7 +579,8 @@ validate: pa state             → φ = (1-H)·C ∈ [0,1]
 validate: bitomega period = 42 → ver bitomega.log
 
 ## Package Identity (CRÍTICO)
-- Fork instalado : com.termux.rafacodephi
+- App principal  : com.termux.rafacodephi
+- Plugin API     : com.termux.rafacodephi.api
 - NÃO usar       : com.termux.api (oficial)
 - Paths bootstrap: /data/data/com.termux.rafacodephi/files/usr/
 

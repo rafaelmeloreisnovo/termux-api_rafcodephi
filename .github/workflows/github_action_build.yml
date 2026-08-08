@@ -18,6 +18,9 @@ jobs:
       - name: Clone repository
         uses: actions/checkout@v4
 
+      - name: Validate RAFCODEPHI package identity
+        run: python3 scripts/validate-package-identity.py
+
       - name: Build
         shell: bash {0}
         run: |

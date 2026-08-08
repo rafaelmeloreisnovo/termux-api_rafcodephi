@@ -1,4 +1,4 @@
-#!/data/data/com.termux/files/usr/bin/bash
+#!/data/data/com.termux.rafacodephi/files/usr/bin/bash
 PA="$HOME/PEDRA_ANGULAR"
 source "$PA/.env" 2>/dev/null
 CMD="$1"; shift

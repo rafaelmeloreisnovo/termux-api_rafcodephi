@@ -14,8 +14,8 @@ command -v aapt >/dev/null 2>&1 || err "aapt não encontrado no PATH (build-tool
 
 adb get-state >/dev/null 2>&1 || err "Nenhum dispositivo adb conectado/autorizado"
 
-pkg_name="com.termux.api"
-termux_pkg="com.termux"
+pkg_name="${RAFCODEPHI_API_PACKAGE_NAME:-com.termux.rafacodephi.api}"
+termux_pkg="${RAFCODEPHI_APP_PACKAGE_NAME:-com.termux.rafacodephi}"
 
 device_abi_primary="$(adb shell getprop ro.product.cpu.abi | tr -d '\r')"
 device_abi_list="$(adb shell getprop ro.product.cpu.abilist | tr -d '\r')"
@@ -63,5 +63,5 @@ ok "Diagnóstico concluído."
 echo "Próximo passo recomendado:"
 echo "  adb install -r '$APK_PATH'"
 echo "Se falhar com assinatura incompatível:"
-echo "  1) desinstalar com.termux e com.termux.api"
+echo "  1) desinstalar ${termux_pkg} e ${pkg_name}"
 echo "  2) reinstalar ambos da mesma fonte de assinatura (F-Droid ou GitHub release coerente)"

@@ -1,4 +1,4 @@
-#!/data/data/com.termux/files/usr/bin/bash
+#!/data/data/com.termux.rafacodephi/files/usr/bin/bash
 # s_numbase.sh — RAFAELIA Numeric Base Explorer
 # Analisa bases numéricas, sequências e curvatura do zero via NumericBase API
 # Uso: bash s_numbase.sh [subcommand] [args...]
@@ -10,12 +10,15 @@ mkdir -p "$OUT_DIR"
 
 _ts() { date +%Y%m%d_%H%M%S; }
 
-# Dispatch via am broadcast para NumericBase API
+# Use the native client so socket_input/socket_output are created and the JSON
+# result is returned to stdout. A direct `am broadcast` cannot provide this I/O.
+API_CLIENT="${PREFIX:-/data/data/com.termux.rafacodephi/files/usr}/libexec/termux-api"
 _call_api() {
-  local extra_args="$*"
-  am broadcast -a com.termux.api.NUMERICBASE \
-    --es api_method NumericBase \
-    $extra_args 2>/dev/null
+  if [ ! -x "$API_CLIENT" ]; then
+    echo "termux-api client ausente ou não executável: $API_CLIENT" >&2
+    return 127
+  fi
+  "$API_CLIENT" NumericBase "$@"
 }
 
 SUB="${1:-help}"; shift 2>/dev/null
@@ -43,9 +46,9 @@ print(f'  Saída   : {d[\"to_repr\"]} (base {d[\"to_base\"]})')
     # s_numbase.sh sequence [fibonacci|tribonacci|primonacci] [length] [mod]
     TYPE="${1:-fibonacci}"; LEN="${2:-20}"; MOD="${3:-0}"
     OUT="$OUT_DIR/seq_${TYPE}_n${LEN}_mod${MOD}_$(_ts).json"
-    EXTRA="--es subcommand sequence --es type $TYPE --ei length $LEN"
-    [ "$MOD" -gt 0 ] && EXTRA="$EXTRA --ei mod $MOD"
-    _call_api $EXTRA > "$OUT" 2>&1
+    EXTRA=(--es subcommand sequence --es type "$TYPE" --ei length "$LEN")
+    [ "$MOD" -gt 0 ] && EXTRA+=(--ei mod "$MOD")
+    _call_api "${EXTRA[@]}" > "$OUT" 2>&1
     echo "── Sequência $TYPE (n=$LEN${MOD:+, mod=$MOD}):"
     python3 -c "
 import json

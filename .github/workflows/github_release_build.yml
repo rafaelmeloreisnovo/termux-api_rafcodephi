@@ -16,6 +16,30 @@ jobs:
         with:
           ref: ${{ env.GITHUB_REF }}
 
+      - name: Materialize paired release signing identity
+        shell: bash
+        env:
+          PAIRED_KEYSTORE_B64: ${{ secrets.RAFCODEPHI_PAIRED_KEYSTORE_B64 }}
+          PAIRED_KEYSTORE_PASSWORD: ${{ secrets.RAFCODEPHI_PAIRED_KEYSTORE_PASSWORD }}
+          PAIRED_KEY_ALIAS: ${{ secrets.RAFCODEPHI_PAIRED_KEY_ALIAS }}
+          PAIRED_KEY_PASSWORD: ${{ secrets.RAFCODEPHI_PAIRED_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          : "${PAIRED_KEYSTORE_B64:?RAFCODEPHI_PAIRED_KEYSTORE_B64 is required}"
+          : "${PAIRED_KEYSTORE_PASSWORD:?RAFCODEPHI_PAIRED_KEYSTORE_PASSWORD is required}"
+          : "${PAIRED_KEY_ALIAS:?RAFCODEPHI_PAIRED_KEY_ALIAS is required}"
+          : "${PAIRED_KEY_PASSWORD:?RAFCODEPHI_PAIRED_KEY_PASSWORD is required}"
+          key_path="$RUNNER_TEMP/rafcodephi-paired-release.jks"
+          printf '%s' "$PAIRED_KEYSTORE_B64" | base64 --decode > "$key_path"
+          test -s "$key_path"
+          echo "RAFCODEPHI_PAIRED_KEYSTORE_FILE=$key_path" >> "$GITHUB_ENV"
+          echo "RAFCODEPHI_PAIRED_KEYSTORE_PASSWORD=$PAIRED_KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
+          echo "RAFCODEPHI_PAIRED_KEY_ALIAS=$PAIRED_KEY_ALIAS" >> "$GITHUB_ENV"
+          echo "RAFCODEPHI_PAIRED_KEY_PASSWORD=$PAIRED_KEY_PASSWORD" >> "$GITHUB_ENV"
+
+      - name: Validate RAFCODEPHI package identity
+        run: python3 scripts/validate-package-identity.py
+
       - name: Build and upload files to release
         shell: bash {0}
         run: |

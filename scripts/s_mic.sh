@@ -1,4 +1,4 @@
-#!/data/data/com.termux/files/usr/bin/bash
+#!/data/data/com.termux.rafacodephi/files/usr/bin/bash
 PA="$HOME/PEDRA_ANGULAR"
 SECS="${1:-3}"
 OUT="$PA/sensors/raw/audio_$(date +%Y%m%d_%H%M%S).m4a"

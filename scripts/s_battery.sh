@@ -1,4 +1,4 @@
-#!/data/data/com.termux/files/usr/bin/bash
+#!/data/data/com.termux.rafacodephi/files/usr/bin/bash
 PA="$HOME/PEDRA_ANGULAR"
 OUT="$PA/sensors/raw/battery_$(date +%Y%m%d_%H%M%S).json"
 termux-battery-status > "$OUT" 2>&1
