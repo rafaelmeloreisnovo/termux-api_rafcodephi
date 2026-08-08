@@ -118,6 +118,10 @@ def validate(root: Path) -> dict[str, object]:
     require(f'<!ENTITY TERMUX_PACKAGE_NAME "{APP_PACKAGE}">' in strings, "RESOURCE_PACKAGE_MISMATCH")
     require(f'<!ENTITY TERMUX_PREFIX_DIR_PATH "{PREFIX}">' in strings, "RESOURCE_PREFIX_MISMATCH")
     require("RAFCODEPHI_PAIRED_KEYSTORE_FILE" in gradle, "PAIRED_SIGNING_INTERFACE_MISSING")
+    require(
+        'coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:2.1.2"' in gradle,
+        "TERMUX_SHARED_DESUGARING_VERSION_MISMATCH",
+    )
 
     return {
         "schema": "rafcodephi.termux-api-identity-contract/v1",
