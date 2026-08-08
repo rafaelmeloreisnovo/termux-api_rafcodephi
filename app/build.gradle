@@ -5,7 +5,7 @@ def rafcodephiApiPackage = System.getenv("RAFCODEPHI_API_PACKAGE_NAME") ?: "${ra
 if (rafcodephiAppPackage != "com.termux.rafacodephi" || rafcodephiApiPackage != "com.termux.rafacodephi.api") {
     throw new GradleException("RAFCODEPHI app/API package identities are canonical and cannot be overridden.")
 }
-def rafcodephiSharedVersion = System.getenv("RAFCODEPHI_TERMUX_SHARED_VERSION") ?: "141991ee5034cc15c754816b729363361df546b3"
+def rafcodephiSharedVersion = System.getenv("RAFCODEPHI_TERMUX_SHARED_VERSION") ?: "31df72137513885ec2535077141f8597496fce73"
 def rafcodephiSharedMode = System.getenv("RAFCODEPHI_TERMUX_SHARED_MODE") ?: "jitpack"
 def pairedKeystoreFile = System.getenv("RAFCODEPHI_PAIRED_KEYSTORE_FILE") ?: ""
 def pairedKeystorePassword = System.getenv("RAFCODEPHI_PAIRED_KEYSTORE_PASSWORD") ?: ""
@@ -124,7 +124,7 @@ android {
 }
 
 dependencies {
-    coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:1.1.5"
+    coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:2.1.2"
 
     implementation "com.google.android.material:material:1.12.0"
     implementation "androidx.biometric:biometric:1.2.0-alpha05"

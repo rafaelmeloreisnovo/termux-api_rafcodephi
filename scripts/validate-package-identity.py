@@ -13,6 +13,12 @@ API_CODE_PACKAGE = "com.termux.api"
 API_RECEIVER = f"{API_PACKAGE}/{API_CODE_PACKAGE}.TermuxApiReceiver"
 PREFIX = f"/data/data/{APP_PACKAGE}/files/usr"
 PIN_RE = re.compile(r'RAFCODEPHI_TERMUX_SHARED_VERSION"\) \?: "([0-9a-f]{40})"')
+CI_BUILD_WORKFLOWS = (
+    ".github/workflows/github_action_build.yml",
+    ".github/workflows/advanced_hardcoded_ci.yml",
+    ".github/workflows/beta.yml",
+    ".github/workflows/github_release_build.yml",
+)
 
 
 def read(root: Path, relative: str) -> str:
@@ -29,6 +35,7 @@ def require(condition: bool, token: str) -> None:
 
 def validate(root: Path) -> dict[str, object]:
     gradle = read(root, "app/build.gradle")
+    proguard = read(root, "app/proguard-rules.pro")
     manifest = read(root, "app/src/main/AndroidManifest.xml")
     strings = read(root, "app/src/main/res/values/strings.xml")
     constants = read(root, "app/src/main/java/com/termux/api/TermuxAPIConstants.java")
@@ -84,6 +91,27 @@ def validate(root: Path) -> dict[str, object]:
     require("com.termux.termux-app:termux-shared" not in gradle, "UPSTREAM_TERMUX_SHARED_FORBIDDEN")
     pin = PIN_RE.search(gradle)
     require(pin is not None, "CUSTOM_TERMUX_SHARED_PIN_NOT_IMMUTABLE")
+    shared_commit = pin.group(1)
+    for workflow_path in CI_BUILD_WORKFLOWS:
+        workflow = read(root, workflow_path)
+        require(
+            "repository: rafaelmeloreisnovo/termux-app-rafacodephi" in workflow,
+            f"CI_SHARED_SOURCE_CHECKOUT_MISSING:{workflow_path}",
+        )
+        require(f"ref: {shared_commit}" in workflow, f"CI_SHARED_PIN_DRIFT:{workflow_path}")
+        require(
+            "RAFCODEPHI_TERMUX_SHARED_MODE: maven-local" in workflow,
+            f"CI_MAVEN_LOCAL_MODE_MISSING:{workflow_path}",
+        )
+        require(
+            "publishReleasePublicationToMavenLocal" in workflow,
+            f"CI_SHARED_PUBLICATION_MISSING:{workflow_path}",
+        )
+        require(
+            "path: rafcodephi-termux-app-src" in workflow
+            and "working-directory: rafcodephi-termux-app-src" in workflow,
+            f"CI_SHARED_WORKDIR_UNSAFE:{workflow_path}",
+        )
     require(
         "TERMUX_API_CODE_PACKAGE_NAME" in constants and "TERMUX_PACKAGE_NAME" in constants,
         "TERMUX_SHARED_CONSTANTS_NOT_CONSUMED",
@@ -91,6 +119,14 @@ def validate(root: Path) -> dict[str, object]:
     require(f'<!ENTITY TERMUX_PACKAGE_NAME "{APP_PACKAGE}">' in strings, "RESOURCE_PACKAGE_MISMATCH")
     require(f'<!ENTITY TERMUX_PREFIX_DIR_PATH "{PREFIX}">' in strings, "RESOURCE_PREFIX_MISMATCH")
     require("RAFCODEPHI_PAIRED_KEYSTORE_FILE" in gradle, "PAIRED_SIGNING_INTERFACE_MISSING")
+    require(
+        'coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:2.1.2"' in gradle,
+        "TERMUX_SHARED_DESUGARING_VERSION_MISMATCH",
+    )
+    require(
+        "-dontwarn com.google.j2objc.annotations.RetainedWith" in proguard,
+        "TERMUX_SHARED_GUAVA_R8_ANNOTATION_RULE_MISSING",
+    )
 
     return {
         "schema": "rafcodephi.termux-api-identity-contract/v1",
@@ -101,8 +137,9 @@ def validate(root: Path) -> dict[str, object]:
         "shared_user_id": "NOT_USED",
         "access_control": f"{APP_PACKAGE}.permission.TERMUX_API",
         "prefix": PREFIX,
-        "termux_shared_commit": pin.group(1),
+        "termux_shared_commit": shared_commit,
         "termux_shared_modes": ["jitpack", "maven-local"],
+        "ci_termux_shared_route": "EXACT_COMMIT_MAVEN_LOCAL",
         "api_receiver": API_RECEIVER,
         "paired_signing_interface": "PASS",
         "paired_apk_signature_proof": "TOKEN_VAZIO",

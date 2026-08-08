@@ -17,6 +17,7 @@ jobs:
       APK_OUT_DIR: app/build/outputs/apk
       ABI32: armeabi-v7a
       ABI64: arm64-v8a
+      RAFCODEPHI_TERMUX_SHARED_MODE: maven-local
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -30,6 +31,19 @@ jobs:
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
+
+      - name: Checkout locked RAFCODEPHI termux-shared source
+        uses: actions/checkout@v4
+        with:
+          repository: rafaelmeloreisnovo/termux-app-rafacodephi
+          ref: 31df72137513885ec2535077141f8597496fce73
+          path: rafcodephi-termux-app-src
+          token: ${{ github.token }}
+          persist-credentials: false
+
+      - name: Publish exact termux-shared to Maven Local
+        working-directory: rafcodephi-termux-app-src
+        run: ./gradlew publishReleasePublicationToMavenLocal --no-daemon
 
       - name: Build debug and release (official behavior preserved)
         shell: bash

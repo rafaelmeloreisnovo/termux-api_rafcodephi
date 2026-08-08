@@ -21,6 +21,7 @@ def test_repository_identity_contract_passes_without_promoting_device_proof() ->
     assert report["api_receiver"] == "com.termux.rafacodephi.api/com.termux.api.TermuxApiReceiver"
     assert report["shared_user_id"] == "NOT_USED"
     assert report["access_control"] == "com.termux.rafacodephi.permission.TERMUX_API"
+    assert report["ci_termux_shared_route"] == "EXACT_COMMIT_MAVEN_LOCAL"
     assert report["paired_apk_signature_proof"] == "TOKEN_VAZIO"
     assert report["device_runtime_proof"] == "TOKEN_VAZIO"
     assert report["claim_allowed"] is False
@@ -36,6 +37,7 @@ def test_numeric_base_helper_uses_the_native_socket_client() -> None:
 def test_upstream_shared_library_regression_fails_closed(tmp_path: Path) -> None:
     for relative in [
         "app/build.gradle",
+        "app/proguard-rules.pro",
         "app/src/main/AndroidManifest.xml",
         "app/src/main/res/values/strings.xml",
         "app/src/main/java/com/termux/api/TermuxAPIConstants.java",

@@ -14,9 +14,33 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      RAFCODEPHI_TERMUX_SHARED_MODE: maven-local
     steps:
       - name: Clone repository
         uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Checkout locked RAFCODEPHI termux-shared source
+        uses: actions/checkout@v4
+        with:
+          repository: rafaelmeloreisnovo/termux-app-rafacodephi
+          ref: 31df72137513885ec2535077141f8597496fce73
+          path: rafcodephi-termux-app-src
+          token: ${{ github.token }}
+          persist-credentials: false
+
+      - name: Publish exact termux-shared to Maven Local
+        working-directory: rafcodephi-termux-app-src
+        run: ./gradlew publishReleasePublicationToMavenLocal --no-daemon
 
       - name: Validate RAFCODEPHI package identity
         run: python3 scripts/validate-package-identity.py
