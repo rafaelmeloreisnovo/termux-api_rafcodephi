@@ -5,7 +5,7 @@ def rafcodephiApiPackage = System.getenv("RAFCODEPHI_API_PACKAGE_NAME") ?: "${ra
 if (rafcodephiAppPackage != "com.termux.rafacodephi" || rafcodephiApiPackage != "com.termux.rafacodephi.api") {
     throw new GradleException("RAFCODEPHI app/API package identities are canonical and cannot be overridden.")
 }
-def rafcodephiSharedVersion = System.getenv("RAFCODEPHI_TERMUX_SHARED_VERSION") ?: "31df72137513885ec2535077141f8597496fce73"
+def rafcodephiSharedVersion = System.getenv("RAFCODEPHI_TERMUX_SHARED_VERSION") ?: "68164a5db71a96839e6a12889421d83dd852653c"
 def rafcodephiSharedMode = System.getenv("RAFCODEPHI_TERMUX_SHARED_MODE") ?: "jitpack"
 def pairedKeystoreFile = System.getenv("RAFCODEPHI_PAIRED_KEYSTORE_FILE") ?: ""
 def pairedKeystorePassword = System.getenv("RAFCODEPHI_PAIRED_KEYSTORE_PASSWORD") ?: ""
