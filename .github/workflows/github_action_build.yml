@@ -33,7 +33,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: rafaelmeloreisnovo/termux-app-rafacodephi
-          ref: 68164a5db71a96839e6a12889421d83dd852653c
+          ref: b0b14953efa40b130c090a699960543fa2e31dcb
           path: rafcodephi-termux-app-src
           token: ${{ github.token }}
           persist-credentials: false
