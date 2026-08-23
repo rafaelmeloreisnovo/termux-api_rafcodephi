@@ -77,6 +77,8 @@ jobs:
         run: |
           set -euo pipefail
           BUILD_TOOLS_DIR="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -n1)"
+          CERTIFICATE_REPORT="$APK_OUT_DIR/release/ci-signing-certificates.txt"
+          : > "$CERTIFICATE_REPORT"
           for abi in "$ABI32" "$ABI64"; do
             RELEASE_APK="$(find "$APK_OUT_DIR/release" -maxdepth 1 -type f -name "termux-api-app_*-${abi}.apk" | head -n1)"
             SIGNED_APK="${RELEASE_APK%.apk}-ci-signed.apk"
@@ -87,8 +89,18 @@ jobs:
               --ks-key-alias ci-validation \
               --out "$SIGNED_APK" \
               "$RELEASE_APK"
-            "$BUILD_TOOLS_DIR/apksigner" verify "$SIGNED_APK"
+            {
+              printf 'apk=%s\n' "$(basename "$SIGNED_APK")"
+              "$BUILD_TOOLS_DIR/apksigner" verify --print-certs "$SIGNED_APK"
+            } >> "$CERTIFICATE_REPORT"
           done
+
+      - name: Destroy internal validation private key
+        if: always()
+        shell: bash
+        run: |
+          rm -f ci-validation.jks
+          test ! -e ci-validation.jks
 
       - name: Generate checksums
         shell: bash
@@ -106,4 +118,4 @@ jobs:
             app/build/outputs/apk/debug/checksums-sha256.txt
             app/build/outputs/apk/release/*.apk
             app/build/outputs/apk/release/checksums-sha256.txt
-            ci-validation.jks
+            app/build/outputs/apk/release/ci-signing-certificates.txt
