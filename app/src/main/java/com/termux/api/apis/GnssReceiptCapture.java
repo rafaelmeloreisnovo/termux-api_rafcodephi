@@ -72,6 +72,7 @@ final class GnssReceiptCapture {
             state.locationServicesEnabled = manager.isProviderEnabled(LocationManager.GPS_PROVIDER);
         } catch (RuntimeException ignored) {
             state.locationServicesEnabled = false;
+            state.locationServiceQueryFailed = true;
         }
 
         final HandlerThread callbackThread = new HandlerThread("gnss-receipt");
@@ -134,8 +135,12 @@ final class GnssReceiptCapture {
                     count++;
                     state.pseudorangeRelatedObserved = true;
                     state.pseudorangeRateObserved = true;
-                    state.accumulatedDeltaRangeObserved = true;
-                    state.multipathObserved = true;
+                    if (measurement.getAccumulatedDeltaRangeState() != GnssMeasurement.ADR_STATE_UNKNOWN) {
+                        state.accumulatedDeltaRangeObserved = true;
+                    }
+                    if (measurement.getMultipathIndicator() != GnssMeasurement.MULTIPATH_INDICATOR_UNKNOWN) {
+                        state.multipathObserved = true;
+                    }
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && measurement.hasCarrierFrequencyHz()) {
                         state.carrierFrequencyObserved = true;
                     }
@@ -205,6 +210,7 @@ final class GnssReceiptCapture {
         out.name("android_version").value(Build.VERSION.RELEASE + " (SDK " + Build.VERSION.SDK_INT + ")");
         out.name("hardware_model_state").value("REDACTED");
         out.name("location_services_enabled").value(state.locationServicesEnabled);
+        out.name("location_services_query_state").value(state.locationServiceQueryFailed ? "TOKEN_VAZIO" : "OBSERVED");
         out.name("hardware_model_retained").value(false);
         out.endObject();
 
@@ -223,16 +229,16 @@ final class GnssReceiptCapture {
                 anyGnssObserved ? "GNSS/location callback observed" : "no callback observed in bounded capture window");
         writeGate(out, "ANDROID_TO_APP", anyGnssObserved ? "PASS" : "TOKEN_VAZIO", evidenceRef,
                 "collector retains field presence/aggregate counts only");
-        writeGate(out, "APP_TO_SERVICE", "NOT_APPLICABLE", evidenceRef,
-                "collector executes inside Termux:API receiver path; no separate application service asserted");
-        writeGate(out, "SERVICE_TO_TOOL", "NOT_APPLICABLE", evidenceRef,
-                "no separate service-to-tool boundary asserted by this local receipt");
+        writeGate(out, "APP_TO_SERVICE", "TOKEN_VAZIO", evidenceRef,
+                "this bounded collector does not independently instrument an app-to-service boundary");
+        writeGate(out, "SERVICE_TO_TOOL", "TOKEN_VAZIO", evidenceRef,
+                "this bounded collector does not independently instrument a service-to-tool boundary");
         writeGate(out, "TOOL_TO_ASSISTANT_CONTEXT", "TOKEN_VAZIO", evidenceRef,
                 "this collector does not observe assistant context");
         writeGate(out, "ASSISTANT_CONTEXT_TO_MODEL", "TOKEN_VAZIO", evidenceRef,
                 "this collector does not observe model-context internals");
-        writeGate(out, "APP_TO_THIRD_PARTY", "NOT_APPLICABLE", evidenceRef,
-                "collector code performs no network transmission");
+        writeGate(out, "APP_TO_THIRD_PARTY", "TOKEN_VAZIO", evidenceRef,
+                "no runtime packet capture was performed; implementation alone cannot prove absence of transfer");
         out.endArray();
 
         out.name("field_observations").beginArray();
@@ -258,18 +264,19 @@ final class GnssReceiptCapture {
                 "no pseudorange is derived or retained by this collector");
         writeField(out, "pseudorange_rate", state.pseudorangeRateObserved ? "OBSERVED" : rawFieldState(requestRaw, rawRegistered, state.rawRegistrationFailed), "HARDWARE_TO_ANDROID", false, null);
         writeField(out, "accumulated_delta_range", state.accumulatedDeltaRangeObserved ? "OBSERVED" : rawFieldState(requestRaw, rawRegistered, state.rawRegistrationFailed), "HARDWARE_TO_ANDROID", false,
-                "measurement validity remains governed by Android state bits; values not retained");
+                "OBSERVED only when Android ADR state is not UNKNOWN; values not retained");
         writeField(out, "receiver_clock", state.receiverClockObserved ? "OBSERVED" : rawFieldState(requestRaw, rawRegistered, state.rawRegistrationFailed), "HARDWARE_TO_ANDROID", false, null);
-        writeField(out, "multipath_indicator", state.multipathObserved ? "OBSERVED" : rawFieldState(requestRaw, rawRegistered, state.rawRegistrationFailed), "HARDWARE_TO_ANDROID", false, null);
+        writeField(out, "multipath_indicator", state.multipathObserved ? "OBSERVED" : rawFieldState(requestRaw, rawRegistered, state.rawRegistrationFailed), "HARDWARE_TO_ANDROID", false,
+                "OBSERVED only when Android multipath indicator is not UNKNOWN; values not retained");
         writeField(out, "other", state.statusObserved ? "OBSERVED" : "TOKEN_VAZIO", "HARDWARE_TO_ANDROID", true,
                 state.statusObserved ? "satellites_visible_max=" + state.satellitesVisible + ";satellites_used_max=" + state.satellitesUsed + ";raw_measurements_max=" + state.rawMeasurementCount : "aggregate counts unavailable");
         out.endArray();
 
         out.name("network_observations").beginArray();
         out.beginObject();
-        out.name("destination_state").value("NONE_OBSERVED");
-        out.name("payload_schema_state").value("NONE_OBSERVED");
-        out.name("evidence_ref").value("collector implementation contains no network client path; runtime packet capture not performed");
+        out.name("destination_state").value("TOKEN_VAZIO");
+        out.name("payload_schema_state").value("TOKEN_VAZIO");
+        out.name("evidence_ref").value("runtime packet capture not performed by this local GNSS receipt");
         out.endObject();
         out.endArray();
 
@@ -309,11 +316,13 @@ final class GnssReceiptCapture {
         out.endArray();
 
         out.name("F_gap").beginArray();
+        if (state.locationServiceQueryFailed) out.value("location service enabled-state query failed; boolean fallback must not be treated as proof of disabled GPS");
         if (!state.locationObserved) out.value("location fix not observed in bounded window");
         if (!state.statusObserved) out.value("GNSS satellite status not observed in bounded window");
         if (!state.nmeaObserved) out.value("NMEA not observed in bounded window");
         if (requestRaw && !state.rawMeasurementEventObserved) out.value("raw GNSS measurements not observed; support/state remains TOKEN_VAZIO");
         out.value("receipt byte digest not yet attached");
+        out.value("network destination/payload boundary remains TOKEN_VAZIO until separately observed");
         out.value("tool-to-assistant and assistant-to-model boundaries remain TOKEN_VAZIO");
         out.endArray();
 
@@ -367,6 +376,7 @@ final class GnssReceiptCapture {
         volatile boolean coarseGranted;
         volatile boolean fineGranted;
         volatile boolean locationServicesEnabled;
+        volatile boolean locationServiceQueryFailed;
         volatile boolean locationObserved;
         volatile boolean altitudeObserved;
         volatile boolean accuracyObserved;
