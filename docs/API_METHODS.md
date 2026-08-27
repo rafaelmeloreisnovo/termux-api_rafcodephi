@@ -8,6 +8,7 @@ Fonte: `TermuxApiReceiver.java` (switch de `api_method`).
 - Clipboard
 - Download
 - Fingerprint
+- FNext
 - JobScheduler
 - Keystore
 - Notification
@@ -23,6 +24,32 @@ Fonte: `TermuxApiReceiver.java` (switch de `api_method`).
 - Vibrate
 - Volume
 - Wallpaper
+
+### FNext — ledger read-only da sessão
+
+`FNext` expõe somente o ledger append-only empacotado no código. Não lê localização, sensores, rede, arquivos pessoais, contas ou identificadores do aparelho.
+
+Subcomandos:
+
+| `subcommand` | efeito |
+|---|---|
+| `current` | estado atual, rota ativa e invariantes |
+| `ledger` | todas as entradas cronológicas da sessão |
+| `entry` | uma entrada; usar extra inteiro `seq` |
+
+Estado canônico desta versão:
+
+- `physical_sensor_access=false`;
+- `network_access=false`;
+- `claim_allowed=false`;
+- `physical_gnss=DEFERRED_BY_USER`;
+- GNSS não é o P0 global;
+- o ZIP entregue é `CI_BUILD_ARTIFACT_PACKAGE`;
+- shortcut Termux de armazenamento compartilhado: `~/storage/downloads`;
+- `VISION!=ARTIFACT!=EXECUTION!=EVIDENCE!=CLAIM`;
+- `TOKEN_VAZIO!=0`.
+
+O request legado `Location --es request gnss-receipt` é reconhecido, mas nesta versão retorna `DEFERRED_BY_USER` e não chama o coletor físico.
 
 ## Mídia
 - AudioInfo

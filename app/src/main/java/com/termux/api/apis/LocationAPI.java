@@ -135,20 +135,24 @@ public class LocationAPI {
                         Looper.loop();
                         break;
                     case REQUEST_GNSS_RECEIPT:
-                        if (!LocationManager.GPS_PROVIDER.equals(provider)) {
-                            out.beginObject()
-                                    .name("API_ERROR")
-                                    .value("gnss-receipt requires provider 'gps'")
-                                    .endObject();
-                            return;
-                        }
-                        GnssReceiptCapture.capture(context, manager, intent, out);
+                        // Explicit 2026-08-27 control-plane correction: this branch is retained
+                        // only as a recognized legacy request and MUST NOT touch physical GNSS.
+                        // The prior physical runtime probe was over-prioritized and was explicitly
+                        // rejected by the user. Preserve the history append-only; fail closed here.
+                        out.beginObject();
+                        out.name("request").value(REQUEST_GNSS_RECEIPT);
+                        out.name("state").value("DEFERRED_BY_USER");
+                        out.name("physical_sensor_access").value(false);
+                        out.name("claim_allowed").value(false);
+                        out.name("reason").value("Physical GNSS collection is not part of the active F_next route.");
+                        out.name("next").value("Use FNext API for the current software/governance/evidence route.");
+                        out.endObject();
                         break;
                     default:
                         out.beginObject()
                                 .name("API_ERROR")
                                 .value("Unsupported request '" + request + "' - only '" + REQUEST_LAST_KNOWN + "', '" + REQUEST_ONCE + "', '" + REQUEST_UPDATES
-                                        + "' and '" + REQUEST_GNSS_RECEIPT + "' supported").endObject();
+                                        + "' and deferred legacy '" + REQUEST_GNSS_RECEIPT + "' supported").endObject();
                 }
             }
         });
