@@ -28,6 +28,7 @@ public class LocationAPI {
     private static final String REQUEST_LAST_KNOWN = "last";
     private static final String REQUEST_ONCE = "once";
     private static final String REQUEST_UPDATES = "updates";
+    private static final String REQUEST_GNSS_RECEIPT = "gnss-receipt";
 
     public static void onReceive(TermuxApiReceiver apiReceiver, final Context context, final Intent intent) {
         Logger.logDebug(LOG_TAG, "onReceive");
@@ -133,11 +134,21 @@ public class LocationAPI {
                         }.start();
                         Looper.loop();
                         break;
+                    case REQUEST_GNSS_RECEIPT:
+                        if (!LocationManager.GPS_PROVIDER.equals(provider)) {
+                            out.beginObject()
+                                    .name("API_ERROR")
+                                    .value("gnss-receipt requires provider 'gps'")
+                                    .endObject();
+                            return;
+                        }
+                        GnssReceiptCapture.capture(context, manager, intent, out);
+                        break;
                     default:
                         out.beginObject()
                                 .name("API_ERROR")
-                                .value("Unsupported request '" + request + "' - only '" + REQUEST_LAST_KNOWN + "', '" + REQUEST_ONCE + "' and '" + REQUEST_UPDATES
-                                        + "' supported").endObject();
+                                .value("Unsupported request '" + request + "' - only '" + REQUEST_LAST_KNOWN + "', '" + REQUEST_ONCE + "', '" + REQUEST_UPDATES
+                                        + "' and '" + REQUEST_GNSS_RECEIPT + "' supported").endObject();
                 }
             }
         });
