@@ -298,7 +298,7 @@ final class GnssReceiptCapture {
         out.name("evidence").beginObject();
         out.name("runtime_receipt_ref").value(evidenceRef);
         out.name("hash_state").value("TOKEN_VAZIO");
-        out.name("provenance_state").value("RECORDED");
+        out.name("provenance_state").value("TOKEN_VAZIO");
         out.name("collector").value("com.termux.api.apis.GnssReceiptCapture");
         out.name("status_callback_registered").value(statusRegistered);
         out.name("nmea_listener_registered").value(nmeaRegistered);
@@ -321,7 +321,7 @@ final class GnssReceiptCapture {
         if (!state.statusObserved) out.value("GNSS satellite status not observed in bounded window");
         if (!state.nmeaObserved) out.value("NMEA not observed in bounded window");
         if (requestRaw && !state.rawMeasurementEventObserved) out.value("raw GNSS measurements not observed; support/state remains TOKEN_VAZIO");
-        out.value("receipt byte digest not yet attached");
+        out.value("receipt byte digest and source/build provenance not yet sealed");
         out.value("network destination/payload boundary remains TOKEN_VAZIO until separately observed");
         out.value("tool-to-assistant and assistant-to-model boundaries remain TOKEN_VAZIO");
         out.endArray();
