@@ -1,0 +1,95 @@
+{
+  "schema": "rafaelia.termux-api-assurance.v1",
+  "repository": "rafaelmeloreisnovo/termux-api_rafcodephi",
+  "observed_commit": "84e06901b995a133aa4c63696a183f9838789474",
+  "authority": {
+    "local_role": "termux_api_plugin_android_api_producer",
+    "federated_router": "rafaelmeloreisnovo/Mapa",
+    "paired_runtime": "rafaelmeloreisnovo/termux-app-rafacodephi",
+    "vectras_attractor_authority_local": false
+  },
+  "identity": {
+    "main_app_package": "com.termux.rafacodephi",
+    "api_package": "com.termux.rafacodephi.api",
+    "signature_permission": "com.termux.rafacodephi.permission.TERMUX_API",
+    "abis": ["armeabi-v7a", "arm64-v8a"]
+  },
+  "license": {
+    "state": "OBSERVED_FORK_PROVENANCE",
+    "anchor": "LICENSE.md@8bc0b2ebc324eef34d4dd3e0720149b221e82331",
+    "upstream": "termux/termux-api",
+    "upstream_declared_license": "GPLv3",
+    "file_and_dependency_terms_override_summary_where_applicable": true,
+    "flatten_to_single_invented_license": false
+  },
+  "provenance": {
+    "state": "TOKEN_VAZIO_CURRENT_UPSTREAM_DELTA_BOUNDARY",
+    "required": [
+      "exact upstream baseline commit",
+      "changed path/hunk classification",
+      "preserved file/dependency notices"
+    ]
+  },
+  "pairing": {
+    "debug_build_is_pairing_proof": false,
+    "same_signing_relationship_required": true,
+    "current_exact_app_apk_digest": "TOKEN_VAZIO",
+    "current_exact_api_apk_digest": "TOKEN_VAZIO",
+    "paired_signature_evidence": "TOKEN_VAZIO"
+  },
+  "ipc": {
+    "receiver_discovery_is_terminal_success": false,
+    "broadcast_dispatch_is_terminal_success": false,
+    "socket_contract_evidence": "TOKEN_VAZIO_CURRENT_HEAD",
+    "payload_logging_allowed": false
+  },
+  "physical_runtime": {
+    "state": "TOKEN_VAZIO_CURRENT_PHYSICAL_API_EXECUTION",
+    "requires": [
+      "exact repo commit",
+      "main app APK digest",
+      "API APK digest",
+      "privacy-minimized device class",
+      "API method identifier",
+      "terminal result/exit",
+      "receipt identity"
+    ]
+  },
+  "security_privacy": {
+    "state": "FAIL_CLOSED",
+    "critical_surfaces": [
+      "exported components",
+      "signature permissions",
+      "signing material",
+      "broadcast extras",
+      "socket lifecycle",
+      "method permissions",
+      "user payload",
+      "logs and paths"
+    ],
+    "public_receipt_rule": "minimum metadata plus hashes or typed references"
+  },
+  "gaps": [
+    {"id":"TV-AUTHORITY-HISTORY","urgency":"P0","state":"MITIGATED_IN_BRANCH","closure":"root AGENTS corrected to Termux API authority; preserve old state in Git history"},
+    {"id":"TV-UPSTREAM-DELTA","urgency":"P0","state":"TOKEN_VAZIO","closure":"bind upstream baseline and path/hunk provenance"},
+    {"id":"TV-PAIRED-SIGNATURE","urgency":"P0","state":"TOKEN_VAZIO","closure":"bind exact app/API APK digests and compatible signing evidence"},
+    {"id":"TV-IPC-CONTRACT","urgency":"P0","state":"TOKEN_VAZIO","closure":"execute receiver/action/extras/socket/result gate at exact HEAD"},
+    {"id":"TV-PHYSICAL-API","urgency":"P0","state":"TOKEN_VAZIO","closure":"physical device method execution receipt"}
+  ],
+  "risk": {
+    "severity": "CRITICAL",
+    "summary": "authority drift or debug-build/signature/IPC conflation can create false runtime and security claims",
+    "mitigations": [
+      "restore local API authority",
+      "preserve upstream license provenance",
+      "require paired APK/signature identities",
+      "fail closed on IPC and physical runtime gaps",
+      "minimize public evidence payloads"
+    ]
+  },
+  "rollback": {
+    "available": true,
+    "procedure": "revert this branch; no production signing material or API implementation is changed by the assurance contract"
+  },
+  "claim_allowed": false
+}
