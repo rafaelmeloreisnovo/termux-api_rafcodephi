@@ -6,12 +6,16 @@ on:
       - 'AGENTS.md'
       - 'contracts/api-assurance.v1.json'
       - 'scripts/validate_api_assurance.py'
+      - 'scripts/diagnose-install-android.sh'
+      - 'tests/test_install_diagnose_fail_closed.py'
       - '.github/workflows/api-assurance.yml'
   pull_request:
     paths:
       - 'AGENTS.md'
       - 'contracts/api-assurance.v1.json'
       - 'scripts/validate_api_assurance.py'
+      - 'scripts/diagnose-install-android.sh'
+      - 'tests/test_install_diagnose_fail_closed.py'
       - '.github/workflows/api-assurance.yml'
 
 permissions:
@@ -24,6 +28,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Validate API authority and evidence boundaries
         run: python3 scripts/validate_api_assurance.py
+      - name: Mocked preinstall safety falsifiers (no device / no install)
+        run: python3 tests/test_install_diagnose_fail_closed.py
       - name: Negative gate — debug build cannot prove paired physical runtime
         run: |
           cp contracts/api-assurance.v1.json /tmp/api-assurance.json
