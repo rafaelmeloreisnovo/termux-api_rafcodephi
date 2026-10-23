@@ -33,9 +33,10 @@ ok "APK package: ${apk_pkg}"
 ok "APK minSdk: ${apk_sdk_min}"
 ok "APK native-code: ${apk_native:-none}"
 
-[[ "$apk_pkg" == "$pkg_name" ]] || warn "APK não é do pacote esperado (${pkg_name})"
+[[ "$apk_pkg" == "$pkg_name" ]] || err "APK incompatível: esperado ${pkg_name}, observado ${apk_pkg:-TOKEN_VAZIO}"
 
-if [[ -n "$apk_sdk_min" && -n "$device_sdk" && "$device_sdk" -lt "$apk_sdk_min" ]]; then
+[[ "$apk_sdk_min" =~ ^[0-9]+$ && "$device_sdk" =~ ^[0-9]+$ ]] || err "minSdk ou device SDK ausente/inválido"
+if [[ "$device_sdk" -lt "$apk_sdk_min" ]]; then
   err "Incompatibilidade de SDK: dispositivo API ${device_sdk} < minSdk ${apk_sdk_min}"
 fi
 
