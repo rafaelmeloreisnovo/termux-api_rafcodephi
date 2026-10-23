@@ -30,7 +30,7 @@ jobs:
           cache: gradle
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4: excludes removed legacy SDK 'tools' package
 
       - name: Checkout locked RAFCODEPHI termux-shared source
         uses: actions/checkout@v4
