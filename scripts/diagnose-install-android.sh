@@ -40,13 +40,17 @@ if [[ "$device_sdk" -lt "$apk_sdk_min" ]]; then
   err "Incompatibilidade de SDK: dispositivo API ${device_sdk} < minSdk ${apk_sdk_min}"
 fi
 
+# Require intersection between APK native ABIs and the device ABI list.
+# Dual-ABI archives need only one supported ABI, not both.
 if [[ -n "$apk_native" ]]; then
-  if [[ "$device_abi_list" != *"armeabi-v7a"* && "$apk_native" == *"armeabi-v7a"* ]]; then
-    warn "Dispositivo sem suporte arm32, mas APK é arm32"
-  fi
-  if [[ "$device_abi_list" != *"arm64-v8a"* && "$apk_native" == *"arm64-v8a"* ]]; then
-    warn "Dispositivo sem suporte arm64, mas APK é arm64"
-  fi
+  abi_match=0
+  IFS=',' read -r -a apk_abis <<< "$apk_native"
+  for abi in "${apk_abis[@]}"; do
+    case ",${device_abi_list}," in
+      *,"$abi",*) abi_match=1 ;;
+    esac
+  done
+  [[ "$abi_match" == 1 ]] || err "APK ABI incompatível: apk=${apk_native}, dispositivo=${device_abi_list:-TOKEN_VAZIO}"
 fi
 
 termux_api_installed="$(adb shell pm path "$pkg_name" 2>/dev/null || true)"
@@ -60,9 +64,10 @@ if [[ -z "$termux_installed" ]]; then
 fi
 
 echo
-ok "Diagnóstico concluído."
-echo "Próximo passo recomendado:"
-echo "  adb install -r '$APK_PATH'"
-echo "Se falhar com assinatura incompatível:"
-echo "  1) desinstalar ${termux_pkg} e ${pkg_name}"
-echo "  2) reinstalar ambos da mesma fonte de assinatura (F-Droid ou GitHub release coerente)"
+ok "Diagnóstico estrutural concluído: identidade, SDK e ABI compatíveis."
+echo "SIGNATURE_PAIR=TOKEN_VAZIO_NOT_VERIFIED"
+echo "PHYSICAL_API_EXECUTION=TOKEN_VAZIO_NOT_RUN"
+echo "CLAIM_ALLOWED=false"
+warn "Instalação NÃO autorizada por este diagnóstico: confira SHA e assinatura compatível App/API."
+warn "Não desinstalar nem substituir apps existentes sem backup e consentimento explícito."
+echo "NEXT=verificar assinaturas pareadas e recibo do dispositivo antes de qualquer instalação"
