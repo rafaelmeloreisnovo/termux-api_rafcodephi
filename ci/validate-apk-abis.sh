@@ -50,5 +50,5 @@ for abi in "$@"; do
   done <<< "$entries"
   digest="$(sha256sum "$apk_path")"
   digest="${digest%% *}"
-  printf 'APK_ABI_GATE=PASS variant=%s abi=%s sha256=%s physical=TOKEN_VAZIO_NOT_RUN paired_signature=TOKEN_VAZIO_PROVENANCE_UNBOUND claim_allowed=false\n' "$variant" "$abi" "$digest"
+  printf 'APK_ABI_GATE=PASS variant=%s abi=%s sha256=%s physical=TOKEN_VAZIO_NOT_RUN paired_signature=TOKEN_VAZIO_NOT_RUN claim_allowed=false\n' "$variant" "$abi" "$digest"
 done
