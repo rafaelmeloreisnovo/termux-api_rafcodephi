@@ -22,5 +22,3 @@ target_compile_options(vectra_pulse PRIVATE
 )
 
 target_link_options(vectra_pulse PRIVATE -Wl,--gc-sections)
-
-target_link_libraries(vectra_pulse log)
