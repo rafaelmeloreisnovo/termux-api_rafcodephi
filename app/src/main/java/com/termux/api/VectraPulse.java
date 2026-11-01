@@ -3,7 +3,7 @@ package com.termux.api;
 import java.nio.ByteBuffer;
 
 /**
- * Zero-overhead JNI bridge to vectra_pulse.S native layer.
+ * Hosted Android/JNI adapter for vectra_pulse.S native layer.
  * All state is kept in a caller-allocated DirectByteBuffer — no heap allocation
  * in the hot path. Fully branchless ARM64/ARM32 NEON implementation.
  *
@@ -19,6 +19,8 @@ public final class VectraPulse {
 
     /** Size in bytes of the VectraState struct. */
     public static final int STATE_SIZE = 36;
+    /** Maximum work accepted by one native burst call. */
+    public static final int MAX_BURST = 1_000_000;
 
     /** Flag bits mirroring vectra_pulse.S contract */
     public static final int FL_VOID    = 1 << 2;
@@ -30,14 +32,15 @@ public final class VectraPulse {
 
     /**
      * Run one COLLAPSE_STEP on the given state (ARM64: <= 42 cycles Cortex-A53).
-     * @param state DirectByteBuffer of capacity >= STATE_SIZE
+     * @param state DirectByteBuffer of capacity >= STATE_SIZE; otherwise throws IllegalArgumentException
      */
     public static native void nativeStep(ByteBuffer state);
 
     /**
      * Run n COLLAPSE_STEPs in a tight native loop (no JNI overhead per step).
      * @param state DirectByteBuffer of capacity >= STATE_SIZE
-     * @param n     number of steps
+     * @param n     number of steps, from 0 through MAX_BURST
+     * @throws IllegalArgumentException if the buffer or step count is invalid
      */
     public static native void nativeBurst(ByteBuffer state, int n);
 
@@ -46,6 +49,7 @@ public final class VectraPulse {
      * ARM64: uses hardware crc32cx/crc32cw/crc32cb instructions.
      * ARM32: SW branchless byte loop (poly 0x82F63B78).
      * @return finalized CRC32C (~crc)
+     * @throws IllegalArgumentException if data is not direct or len is outside its capacity
      */
     public static native int nativeCrc32c(ByteBuffer data, int len);
 
